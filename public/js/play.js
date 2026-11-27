@@ -375,7 +375,7 @@ function writeScreen(v) {
   }
   const idx = ps.indexOf(nx);
   put(`<div class="box tilt"><div class="kicker">${ps.length > 1 ? `PROMPT ${idx + 1} OF ${ps.length}` : 'FINAL PROMPT'}</div><div class="prm">${esc(nx.text)}</div></div>
-    <textarea class="t" id="ans" maxlength="80" placeholder="Type something funny…" autocomplete="off" autocapitalize="sentences"></textarea>
+    <textarea class="t" id="ans" maxlength="80" enterkeyhint="send" placeholder="Type something funny…" autocomplete="off" autocapitalize="sentences"></textarea>
     <div class="count" id="cnt">0/80</div>
     <button class="btn go" id="send">SUBMIT</button>
     <button class="btn red small" id="panic">😱 PANIC BUTTON <span class="sub">Silly auto-answer, half points</span></button>`);
@@ -391,6 +391,13 @@ function writeScreen(v) {
     try { sessionStorage.setItem(draftKeyLS, ta.value); } catch {}
     clearTimeout(draftT);
     draftT = setTimeout(sendDraft, 600);
+  });
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (ta.value.trim()) $('#send').click();
+      else ta.blur();
+    }
   });
   $('#send').onclick = () => {
     const text = ta.value.trim();

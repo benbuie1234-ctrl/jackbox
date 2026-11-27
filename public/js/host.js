@@ -501,6 +501,7 @@ const SCENES = {
   },
   'z-match': {
     scene: 'match',
+    restart: true,
     async enter(v, tk) {
       const box = matchScene(v, false);
       const [pc, , ] = [$('.prompt', box)];
@@ -788,11 +789,14 @@ const SCENES = {
       audio.hush(true);
       audio.rise(3);
       await creep(g.a * 0.86, 3000, (x) => { setFill(x); num.textContent = Math.round(x) + '%'; });
+      if (!live(tk)) return audio.hush(false);
       audio.drumroll(1.4);
       await wait(1500);
+      if (!live(tk)) return audio.hush(false);
       const f = (x) => { setFill(x); num.textContent = Math.round(x) + '%'; };
       f.from = g.a * 0.86;
       await creep(g.a, 400, f);
+      if (!live(tk)) return audio.hush(false);
       audio.hush(false);
       num.classList.add('real', 'slam');
       num.textContent = g.a + '%';
@@ -863,7 +867,7 @@ const SCENES = {
       const g = v.gv;
       add(`<div class="card taskcard slam"><div class="k">THE TASK WAS:</div><div class="t">${esc(g.task)}</div></div>`);
       strikes(g.strikes);
-      add(`<div class="sub">Who's the Faker? Argue it out! <br>👑 VIP taps <b>START VOTE</b> when ready.</div>`);
+      add(`<div class="sub">Who's the Faker? Argue it out! <br>👑 ${esc(P(v.vip).name)} taps <b>START VOTE</b> when ready.</div>`);
       audio.slam();
       await say(`The task was: ${g.task}. So… who's faking?`);
     },
@@ -925,6 +929,7 @@ const SCENES = {
         add(`<div class="mega m slam">THE FAKER WAS…</div>`);
         audio.drumroll(1.6);
         await wait(1700);
+        if (!live(tk)) return;
         const acc = add(`<div class="accused slam" style="margin-top:2vh">${av(P(g.faker))}<div class="nm">${esc(P(g.faker).name)}</div></div>`);
         stamp('ESCAPED!', '', acc);
         shake(); audio.zing();

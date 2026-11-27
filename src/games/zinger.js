@@ -102,7 +102,7 @@ function tally(room) {
   room.quote(pr.ans[pr.a], pr.a, pa, pr.text);
   room.quote(pr.ans[pr.b], pr.b, pb, pr.text);
   pr.res = { A, B, pa, pb, winner, zing, total };
-  room.phase('z-result', 16, { hostPaced: true, spot: [pr.a, pr.b] });
+  room.phase('z-result', 22, { hostPaced: true, spot: [pr.a, pr.b] });
 }
 
 function setupFinal(room) {

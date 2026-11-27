@@ -57,7 +57,7 @@ function reveal(room) {
     c.pts[id] = pts;
     if (pts) { room.addScore(id, pts); room.stat(id, 'betsWon'); }
   }
-  room.phase('h-reveal', 18, { hostPaced: true, spot: [c.gid] });
+  room.phase('h-reveal', 25, { hostPaced: true, spot: [c.gid] });
 }
 
 function finalReveal(room) {
@@ -75,7 +75,7 @@ function finalReveal(room) {
     room.stat(id, 'diffSum', diff);
     room.quote(`Final guess ${v}% — it was ${c.a}%`, id, pts, c.q);
   }
-  room.phase('h-freveal', 20, { hostPaced: true });
+  room.phase('h-freveal', 28, { hostPaced: true });
 }
 
 export default {
