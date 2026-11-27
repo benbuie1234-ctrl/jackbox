@@ -285,11 +285,18 @@ function update(v) {
   }
 }
 
+function leaveRoom() {
+  if (!confirm('Leave this room?')) return;
+  if (conn) { conn.send({ t: 'leave' }); conn.close(); conn = null; }
+  forget();
+  showJoin('You left the room.');
+}
+
 function renderBar(v) {
   bar.classList.remove('hidden');
   bar.innerHTML = `<div class="me"><div class="dot" style="background:${v.me.color}"></div><span>${v.me.vip ? '👑 ' : ''}${esc(v.me.name)}</span></div>
     <div class="sp"></div><div class="clock hidden" id="clock"></div>
-    ${v.me.vip ? '<button class="menu" id="vmenu">⋯</button>' : ''}`;
+    <button class="menu" id="vmenu">⋯</button>`;
   const m = $('#vmenu');
   if (m) m.onclick = vipMenu;
   tickClock();
@@ -298,23 +305,26 @@ function renderBar(v) {
 function vipMenu() {
   const d = document.createElement('div');
   d.className = 'vipmenu';
-  const others = (V && V.players || []).filter((p) => p.id !== V.me.id);
-  const kicks = others.length
+  const isVip = !!(V && V.me && V.me.vip);
+  const others = isVip ? (V.players || []).filter((p) => p.id !== V.me.id) : [];
+  const kicks = isVip && others.length
     ? `<div class="kicker" style="margin-top:6px">KICK AFK / DUPLICATE PLAYER</div>` + others.map((p) => `<button class="btn white small" data-kick="${p.id}">🚫 Kick ${esc(p.name)}${p.connected || p.bot ? '' : ' (disconnected)'}</button>`).join('')
-    : `<div class="note" style="color:var(--ink);text-shadow:none;font-size:14px">No other players to kick yet.</div>`;
-  const gameBtns = V && V.game
+    : '';
+  const gameBtns = isVip && V && V.game
     ? `<button class="btn go small" id="vm-skip">⏭ SKIP CURRENT TIMER / ADVANCE</button>
        <button class="btn red small" id="vm-end">END GAME → BACK TO LOBBY</button>`
     : '';
-  d.innerHTML = `<div class="box"><div class="kicker">👑 VIP CONTROLS</div>
+  d.innerHTML = `<div class="box"><div class="kicker">${isVip ? '👑 VIP CONTROLS' : 'MENU'}</div>
     ${gameBtns}
     ${kicks}
+    <button class="btn red small" id="vm-leave">🚪 LEAVE ROOM</button>
     <button class="btn white small" id="vm-x">CLOSE</button></div>`;
   document.body.appendChild(d);
   $('#vm-x', d).onclick = () => d.remove();
   d.onclick = (e) => { if (e.target === d) d.remove(); };
   const sk = $('#vm-skip', d); if (sk) sk.onclick = () => { vip('skip-phase'); d.remove(); };
   const en = $('#vm-end', d); if (en) en.onclick = () => { if (confirm('End this game for everyone?')) { vip('end'); d.remove(); } };
+  $('#vm-leave', d).onclick = () => { d.remove(); leaveRoom(); };
   for (const b of $$('[data-kick]', d)) b.onclick = () => { if (confirm(`Kick ${b.textContent.replace('🚫 Kick ', '')}?`)) { vip('kick', { id: b.dataset.kick }); d.remove(); } };
 }
 
@@ -424,8 +434,9 @@ function sliderScreen({ title, q, onLock, live }) {
 const SCREENS = {
   lobby(v) {
     const addEdit = () => {
-      put(`<button class="btn white small" id="editme">✏️ EDIT NAME / REDRAW DOODLE</button>`);
+      put(`<div class="row"><button class="btn white small" id="editme">✏️ EDIT</button><button class="btn red small" id="leaveme">🚪 LEAVE</button></div>`);
       $('#editme').onclick = () => showJoin('', true);
+      $('#leaveme').onclick = leaveRoom;
     };
     if (!v.me.vip) {
       put(`<div class="logo">YOU'RE IN!</div>

@@ -90,6 +90,7 @@ export class Room extends DurableObject {
       const still = this.socketsFor(att.pid).some((w) => w !== ws);
       if (!still) {
         this.s.players[att.pid].connected = false;
+        if (this.s.phase === 'lobby') this.at(20000, 'prune', { pid: att.pid });
         await this.commit();
       }
     }
@@ -175,6 +176,11 @@ export class Room extends DurableObject {
 
   runEvent(e) {
     if (e.kind === 'timeout') return this.timeout();
+    if (e.kind === 'prune' && this.s.phase === 'lobby') {
+      const p = this.s.players[e.data.pid];
+      if (p && !p.connected && !p.bot) this.removePlayer(p.id);
+      return;
+    }
     const G = this.G();
     if (e.kind === 'bot' && G && G.bot) {
       const p = this.s.players[e.data.pid];
@@ -348,10 +354,15 @@ export class Room extends DurableObject {
     const p = pid && s.players[pid];
     if (!p) return void this.send(ws, { t: 'unknown' });
 
+    if (m.t === 'leave') {
+      this.leavePlayer(pid, ws);
+      return void (await this.commit());
+    }
+
     if (m.t === 'edit' && s.phase === 'lobby') {
       const name = this.cleanName(m.name);
       if (!name) return void this.send(ws, { t: 'error', code: 'NAME', msg: 'Type a name first!' });
-      const clash = Object.values(s.players).find((x) => x.id !== pid && x.name === name && !x.bot);
+      const clash = Object.values(s.players).find((x) => x.id !== pid && x.name === name && !x.bot && !x.left);
       if (clash && clash.connected && this.socketsFor(clash.id).length) {
         return void this.send(ws, { t: 'error', code: 'NAME_TAKEN', msg: `Someone is already ${name}. Pick another name!` });
       }
@@ -411,7 +422,7 @@ export class Room extends DurableObject {
     const s = this.s;
     const name = this.cleanName(m.name);
     if (!name) return void this.send(ws, { t: 'error', code: 'NAME', msg: 'Type a name first!' });
-    let p = Object.values(s.players).find((x) => x.name === name && !x.bot);
+    let p = Object.values(s.players).find((x) => x.name === name && !x.bot && !x.left);
     if (p && p.connected && this.socketsFor(p.id).length) {
       return void this.send(ws, { t: 'error', code: 'NAME_TAKEN', msg: `Someone is already ${name}. Pick another name!` });
     }
@@ -459,6 +470,29 @@ export class Room extends DurableObject {
     delete this.s.players[id];
     this.s.order = this.s.order.filter((x) => x !== id);
     this.ctx.storage.delete('av:' + id);
+    if (this.s.vip === id) {
+      const next = this.s.order.find((x) => this.s.players[x] && !this.s.players[x].bot);
+      this.s.vip = next || null;
+    }
+  }
+
+  leavePlayer(id, skipWs) {
+    const p = this.s.players[id];
+    if (!p) return;
+    for (const w of this.socketsFor(id)) if (w !== skipWs) try { w.close(1000, 'left'); } catch {}
+    if (skipWs) try { skipWs.serializeAttachment({ role: 'player', pid: null, ok: false }); skipWs.close(1000, 'left'); } catch {}
+    if (this.s.phase === 'lobby' || this.s.phase === 'podium') {
+      this.removePlayer(id);
+    } else {
+      p.left = true;
+      p.inGame = false;
+      p.connected = false;
+      this.s.order = this.s.order.filter((x) => x !== id);
+      if (this.s.vip === id) {
+        const next = this.s.order.find((x) => this.s.players[x] && !this.s.players[x].bot);
+        this.s.vip = next || null;
+      }
+    }
   }
 
   async vipAction(ws, m) {
@@ -522,6 +556,9 @@ export class Room extends DurableObject {
     const s = this.s;
     s.game = null;
     s.podium = null;
+    for (const id of Object.keys(s.players)) {
+      if (s.players[id].left) { delete s.players[id]; this.ctx.storage.delete('av:' + id); }
+    }
     for (const id of s.order) s.players[id].inGame = true;
     this.phase('lobby', 0);
   }
