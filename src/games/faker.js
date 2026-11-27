@@ -55,7 +55,7 @@ function tally(room) {
   c.over = caught || escaped;
   c.tasks.push(t.text);
   t.res = { counts, accused, tie: max > 0 && top.length > 1, none: max === 0, caught, escaped, strikes: c.strikes, pts };
-  room.phase('f-result', 16, { hostPaced: true, spot: accused ? [accused] : [] });
+  room.phase('f-result', 26, { hostPaced: true, spot: accused ? [accused] : [] });
 }
 
 export default {

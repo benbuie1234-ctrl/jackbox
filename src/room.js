@@ -90,7 +90,6 @@ export class Room extends DurableObject {
       const still = this.socketsFor(att.pid).some((w) => w !== ws);
       if (!still) {
         this.s.players[att.pid].connected = false;
-        if (this.s.phase === 'lobby') this.at(20000, 'prune', { pid: att.pid });
         await this.commit();
       }
     }
@@ -176,11 +175,6 @@ export class Room extends DurableObject {
 
   runEvent(e) {
     if (e.kind === 'timeout') return this.timeout();
-    if (e.kind === 'prune' && this.s.phase === 'lobby') {
-      const p = this.s.players[e.data.pid];
-      if (p && !p.connected && !p.bot) this.removePlayer(p.id);
-      return;
-    }
     const G = this.G();
     if (e.kind === 'bot' && G && G.bot) {
       const p = this.s.players[e.data.pid];
