@@ -1,7 +1,7 @@
 import { FAKER_TASKS } from '../content.js';
 import { shuffle, deal } from '../util.js';
 
-const CATS = ['hands', 'point', 'fingers'];
+const CATS = ['hands', 'point', 'fingers', 'face'];
 const TASK = 12, DISCUSS = 60, VOTE = 25;
 
 function startCase(room) {
@@ -73,7 +73,8 @@ export default {
     const ids = shuffle(room.active().map((p) => p.id));
     const humans = ids.filter((id) => !room.s.players[id].bot);
     const pool = humans.length >= 3 ? shuffle(humans) : ids;
-    const cases = CATS.map((cat, i) => ({ cat, faker: pool[i % pool.length], strikes: 0, tasks: [], over: false }));
+    const chosen = shuffle(CATS).slice(0, 3);
+    const cases = chosen.map((cat, i) => ({ cat, faker: pool[i % pool.length], strikes: 0, tasks: [], over: false }));
     return { cases, ci: 0, task: null };
   },
 

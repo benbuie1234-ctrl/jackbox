@@ -91,6 +91,11 @@ export const ZINGER_PROMPTS = [
 ];
 
 export const ZINGER_FINALS = [
+  'ACROSTIC: Invent what the acronym "P.I.E." really stands for',
+  'ACROSTIC: Invent what the acronym "N.A.P." really stands for',
+  'ACROSTIC: Invent what the acronym "F.A.M." really stands for',
+  'ACROSTIC: Invent what the acronym "W.I.F.I." really stands for',
+  'ACROSTIC: Invent what the acronym "C.H.A.O.S." really stands for',
   'Write the perfect one-line toast for tonight\'s dinner',
   'Describe this family in exactly three words',
   'The headline if this family made the news tomorrow',
@@ -213,6 +218,28 @@ export const FAKER_TASKS = {
       'How much do you like spicy food? (1–5)',
       'How good of a driver (or future driver) are you? (1–5)',
       'How much do you love the holidays? (1–5)',
+    ],
+  },
+  face: {
+    label: 'MAKE A FACE',
+    how: 'Make the facial expression on 3-2-1-GO and hold it!',
+    tasks: [
+      'Make the face you make when you step on a Lego barefoot',
+      'Make the face you make when you bite into a whole lemon',
+      'Make your best "I definitely did NOT eat the last cookie" face',
+      'Make the face you make when someone says "we need to talk"',
+      'Make your most dramatic soap-opera gasp face',
+      'Make the face you make when you smell something weird in the fridge',
+      'Make your best "trying not to laugh during a serious moment" face',
+      'Make the face you make when you win a million dollars',
+      'Make your best supervillain evil-genius face',
+      'Make the face you make when the Wi-Fi goes out mid-game',
+      'Make your best "pretending to love a weird gift" face',
+      'Make the face you make when you see a giant spider on the ceiling',
+      'Make your best confused dog tilting its head face',
+      'Make the face you make when you accidentally send a text to the wrong person',
+      'Make your best "I\'m totally awake, I wasn\'t sleeping" face',
+      'Make the face you make when your food finally arrives at a restaurant',
     ],
   },
 };

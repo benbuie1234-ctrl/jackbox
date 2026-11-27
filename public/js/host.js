@@ -69,6 +69,49 @@ const tilt = () => (Math.random() < 0.5 ? -1 : 1) * (1 + Math.random() * 1.5);
 const live = (tk) => tk === choreo;
 const done = (v) => conn.send({ t: 'host-done', phaseId: v.phaseId });
 const spell = (n) => String(n);
+const QUIPS = {
+  zing: [
+    (n) => `Zing! ${n} takes every single vote. Total annihilation!`,
+    (n) => `Zing! Unanimous! ${n} just owned the whole room!`,
+    (n) => `Zing! Clean sweep by ${n}. Not even close!`,
+    (n) => `Zing! ${n} crushed it with a hundred percent of the votes!`,
+  ],
+  win: [
+    (n) => `${n} takes the win!`,
+    (n) => `Point goes to ${n}! Nice one.`,
+    (n) => `${n} wins that matchup!`,
+    (n) => `The crowd has spoken: ${n} wins!`,
+  ],
+  tie: [
+    () => "It's a tie! Everybody wins! Or nobody wins. Mostly nobody.",
+    () => "Dead heat! You're splitting the points on this one.",
+    () => "A tie! The couch could not decide.",
+  ],
+  bull: [
+    (a) => `It's ${a} percent! Bullseye! Are you secretly a supercomputer?`,
+    (a) => `It's ${a} percent! Spot on! That's a bullseye!`,
+    (a) => `It's ${a} percent! Nailed it! Massive bullseye bonus!`,
+  ],
+  close: [
+    (a) => `It's ${a} percent! Ooh, super close!`,
+    (a) => `It's ${a} percent! Solid hunch!`,
+  ],
+  whiff: [
+    (a) => `It's ${a} percent! Yikes, not even in the same zip code.`,
+    (a) => `It's ${a} percent! Bold guess. Wildly wrong, but bold!`,
+    (a) => `It's ${a} percent! Ouch, that's gonna leave a mark.`,
+  ],
+  caught: [
+    (n) => `${n} was the faker! Caught red-handed!`,
+    (n) => `Busted! ${n} was faking the whole time!`,
+    (n) => `Case closed! ${n} couldn't fool this room!`,
+  ],
+  escaped: [
+    (n) => `${n} was the faker and got away with it! Oscar-worthy performance!`,
+    (n) => `Unbelievable! ${n} fooled all of you and escaped!`,
+  ],
+};
+const quip = (k, ...args) => { const a = QUIPS[k]; return a[Math.floor(Math.random() * a.length)](...args); };
 
 function shake() {
   const app = $('#app');
@@ -373,9 +416,7 @@ const SCENES = {
         $('.qr').remove();
         $('.qrlabel').remove();
       }
-      add(`<div class="hostbtns"><button id="bots">🤖 Add 3 Bots</button><button id="nobots">Remove Bots</button><button id="newroom">New Room</button></div>`);
-      $('#bots').onclick = () => conn.send({ t: 'add-bots' });
-      $('#nobots').onclick = () => conn.send({ t: 'remove-bots' });
+      add(`<div class="hostbtns"><button id="newroom">New Room</button></div>`);
       $('#newroom').onclick = () => { if (confirm('Start a brand-new room? Everyone will need the new code.')) { localStorage.removeItem(LS); location.href = '/host?new'; } };
       this.update(v, true);
     },
@@ -529,14 +570,14 @@ const SCENES = {
         shake();
         audio.zing();
         confetti(120);
-        await say(`Zing! ${P(r.winner === 'a' ? v.gv.a : v.gv.b).name} takes every vote!`);
+        await say(quip('zing', P(r.winner === 'a' ? v.gv.a : v.gv.b).name));
       } else if (r.winner === 'tie') {
         const st = stamp('TIE!', '', box);
         st.style.top = '30%';
-        await say(r.total ? "It's a tie!" : 'Nobody voted!');
+        await say(r.total ? quip('tie') : 'Nobody voted! Awkward.');
       } else {
         const wid = r.winner === 'a' ? v.gv.a : v.gv.b;
-        await say(`${P(wid).name} wins this one!`);
+        await say(quip('win', P(wid).name));
       }
       await wait(1800);
       if (live(tk)) done(v);
@@ -685,7 +726,8 @@ const SCENES = {
         bets.insertAdjacentHTML('beforeend', `<div class="card bet ${pts ? 'right' : 'wrong'} pop" style="animation-delay:${0.12 * (i + 1)}s">${av(P(id))}<span>${BET_LABEL[bet]}</span>${pts ? `<span class="p">+${pts}</span>` : ''}</div>`);
       });
       add(`<div class="card dialnote pop" style="animation-delay:.3s">${esc(g.note)}</div>`);
-      await say(`It's ${g.a} percent! ${diff <= 2 ? 'Bullseye!' : ''}`);
+      const line = diff <= 2 ? quip('bull', g.a) : diff <= 10 ? quip('close', g.a) : diff >= 28 ? quip('whiff', g.a) : `It's ${g.a} percent!`;
+      await say(line);
       await wait(2600);
       if (live(tk)) done(v);
     },
@@ -855,7 +897,7 @@ const SCENES = {
           stamp('CAUGHT!', 'green', acc);
           shake(); audio.fanfare(); confetti(120);
           sus();
-          await say(`${P(r.accused).name} was the faker! Caught red-handed!`);
+          await say(quip('caught', P(r.accused).name));
         } else {
           stamp('INNOCENT!', '', acc);
           audio.buzzer();
@@ -879,7 +921,7 @@ const SCENES = {
         const acc = add(`<div class="accused slam" style="margin-top:2vh">${av(P(g.faker))}<div class="nm">${esc(P(g.faker).name)}</div></div>`);
         stamp('ESCAPED!', '', acc);
         shake(); audio.zing();
-        await say(`${P(g.faker).name} was the faker and got away with it!`);
+        await say(quip('escaped', P(g.faker).name));
       } else if (!r.caught) strikes(r.strikes);
       await wait(2200);
       if (live(tk)) done(v);

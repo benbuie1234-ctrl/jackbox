@@ -390,11 +390,16 @@ function sliderScreen({ title, q, onLock, live }) {
 // ---------------------------------------------------------------- SCREENS
 const SCREENS = {
   lobby(v) {
+    const addEdit = () => {
+      put(`<button class="btn white small" id="editme">✏️ EDIT NAME / REDRAW DOODLE</button>`);
+      $('#editme').onclick = () => { if (conn) conn.close(); conn = null; forget(); showJoin(); };
+    };
     if (!v.me.vip) {
       put(`<div class="logo">YOU'RE IN!</div>
         <div class="box tilt" style="text-align:center"><div class="prm">Look for yourself on the TV.</div>
         <div class="note" style="color:var(--ink);text-shadow:none;margin-top:6px">👑 ${esc(v.vipName)} picks the game.</div></div>`);
-      return reactions();
+      reactions();
+      return addEdit();
     }
     put(`<div class="h1">👑 YOU'RE THE VIP</div><div class="note">Pick a game when everyone's in (<b data-count>${v.count}</b> players)</div>`);
     for (const g of v.games) {
@@ -403,6 +408,7 @@ const SCREENS = {
     put(`<div class="toggle ${v.settings.kid ? 'on' : ''}" id="kid"><span>🧒 KID MODE<br><small style="font-family:var(--body)">50% longer timers</small></span><div class="sw"></div></div>`);
     for (const b of $$('[data-g]')) b.onclick = () => { vip('start', { game: b.dataset.g }); vib([30, 30, 90]); };
     $('#kid').onclick = () => vip('kid', { on: !V.settings.kid });
+    addEdit();
   },
 
   intro(v) {
