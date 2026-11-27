@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" fill="none">
+  <circle cx="70" cy="70" r="62" fill="#c8102e" stroke="#111" stroke-width="5.5"/>
+  <!-- Pointing hand -->
+  <path d="M32 62 H82 C88 62 88 73 82 73 H68 C73 73 73 83 67 83 H62 C67 83 67 93 61 93 H56 C61 93 60 102 52 102 H36 C28 102 24 94 24 84 V70 C24 64 28 62 32 62 Z" fill="#fffdf6" stroke="#111" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Extended index finger -->
+  <rect x="64" y="60" width="48" height="15" rx="7.5" fill="#fffdf6" stroke="#111" stroke-width="5"/>
+  <!-- Target burst -->
+  <circle cx="116" cy="44" r="10" fill="#ffd400" stroke="#111" stroke-width="4"/>
+  <path d="M108 86 L120 94 M114 70 H126" stroke="#ffd400" stroke-width="4.5" stroke-linecap="round"/>
+</svg>

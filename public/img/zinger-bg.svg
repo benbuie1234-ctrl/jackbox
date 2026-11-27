@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="zg" cx="50%" cy="20%" r="80%">
+      <stop offset="0%" stop-color="#284cff"/>
+      <stop offset="55%" stop-color="#1025b5"/>
+      <stop offset="100%" stop-color="#070e4d"/>
+    </radialGradient>
+    <pattern id="brick" width="120" height="60" patternUnits="userSpaceOnUse">
+      <rect width="120" height="60" fill="none" stroke="#08125c" stroke-width="3" opacity="0.5"/>
+      <line x1="60" y1="0" x2="60" y2="30" stroke="#08125c" stroke-width="3" opacity="0.5"/>
+      <line x1="0" y1="30" x2="120" y2="30" stroke="#08125c" stroke-width="3" opacity="0.5"/>
+      <line x1="120" y1="30" x2="120" y2="60" stroke="#08125c" stroke-width="3" opacity="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="900" fill="url(#zg)"/>
+  <rect width="1600" height="740" fill="url(#brick)"/>
+  <!-- Comedy club wooden stage floor -->
+  <polygon points="0,730 1600,730 1600,900 0,900" fill="#5e2a18" stroke="#111" stroke-width="6"/>
+  <g stroke="#2e1208" stroke-width="4" opacity="0.7">
+    <line x1="800" y1="730" x2="800" y2="900"/>
+    <line x1="600" y1="730" x2="500" y2="900"/>
+    <line x1="1000" y1="730" x2="1100" y2="900"/>
+    <line x1="400" y1="730" x2="200" y2="900"/>
+    <line x1="1200" y1="730" x2="1400" y2="900"/>
+  </g>
+  <!-- Velvet curtains left & right -->
+  <path d="M0 0 H240 Q180 420 260 760 L0 800 Z" fill="#0d1b7a" stroke="#111" stroke-width="7"/>
+  <path d="M1600 0 H1360 Q1420 420 1340 760 L1600 800 Z" fill="#0d1b7a" stroke="#111" stroke-width="7"/>
+  <path d="M90 0 Q60 400 110 780" stroke="#284cff" stroke-width="10" fill="none" opacity="0.5"/>
+  <path d="M1510 0 Q1540 400 1490 780" stroke="#284cff" stroke-width="10" fill="none" opacity="0.5"/>
+  <!-- Overhead lighting truss -->
+  <rect x="0" y="0" width="1600" height="32" fill="#111"/>
+  <!-- Neon comic bursts in far corners -->
+  <polygon points="260,640 290,590 320,635 370,610 340,665 390,700 325,705 310,750 275,705 220,710 250,665 210,630" fill="#ffd23f" stroke="#111" stroke-width="5" opacity="0.75"/>
+  <polygon points="1340,640 1310,590 1280,635 1230,610 1260,665 1210,700 1275,705 1290,750 1325,705 1380,710 1350,665 1390,630" fill="#ff2d8a" stroke="#111" stroke-width="5" opacity="0.75"/>
+</svg>

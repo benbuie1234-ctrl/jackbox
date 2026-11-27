@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Couch Chaos — TV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/common.css" />
+  <link rel="stylesheet" href="/css/host.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+</head>
+<body class="theme-lobby">
+  <div id="bg">
+    <div class="sunburst"></div>
+    <div class="beam b1"></div>
+    <div class="beam b2"></div>
+    <div class="dots"></div>
+    <div class="tape top"></div>
+    <div class="tape bottom"></div>
+  </div>
+
+  <div id="app">
+    <div id="safe">
+      <header id="top">
+        <div id="logo">COUCH CHAOS</div>
+        <div id="joinbug" class="card hidden"></div>
+        <div id="timer" class="hidden">
+          <svg viewBox="0 0 100 100"><circle class="bgc" cx="50" cy="50" r="44" /><circle class="fgc" cx="50" cy="50" r="40" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0" /></svg>
+          <span id="timer-n"></span>
+        </div>
+      </header>
+      <main id="screen"></main>
+      <footer id="strip"></footer>
+    </div>
+  </div>
+
+  <div id="fx"></div>
+  <div id="wipe"><div class="panel p1"></div><div class="panel p2"></div><div class="panel p3"></div></div>
+
+  <div id="controls">
+    <button id="btn-voice" title="Voice on/off">🗣️</button>
+    <button id="btn-music" title="Music on/off">🎵</button>
+    <button id="btn-full" title="Fullscreen (F)">⛶</button>
+  </div>
+
+  <div id="unmute-wrap">
+    <button id="unmute">🔊 CLICK TO UNMUTE TV AUDIO<small>Browsers keep sound off until you click once.</small></button>
+  </div>
+  <div id="conn" class="hidden">RECONNECTING…</div>
+
+  <script type="module" src="/js/host.js"></script>
+</body>
+</html>

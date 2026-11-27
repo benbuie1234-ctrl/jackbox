@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" fill="none">
+  <!-- Starburst backdrop -->
+  <polygon points="120,6 138,34 172,14 174,48 212,42 196,74 232,86 198,104 218,136 180,132 178,154 146,138 120,156 94,138 62,154 60,132 22,136 42,104 8,86 44,74 28,42 66,48 68,14 102,34" fill="#ffd23f" stroke="#111" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Hard shadow under couch -->
+  <ellipse cx="124" cy="134" rx="82" ry="12" fill="#111" opacity="0.28"/>
+  <!-- Couch feet -->
+  <rect x="48" y="120" width="14" height="14" rx="3" fill="#111"/>
+  <rect x="178" y="120" width="14" height="14" rx="3" fill="#111"/>
+  <!-- Couch backrest -->
+  <rect x="44" y="42" width="152" height="62" rx="22" fill="#ff2d8a" stroke="#111" stroke-width="5"/>
+  <!-- Cushion tuft buttons -->
+  <circle cx="88" cy="68" r="5" fill="#111"/>
+  <circle cx="120" cy="68" r="5" fill="#111"/>
+  <circle cx="152" cy="68" r="5" fill="#111"/>
+  <!-- Highlight strip on backrest -->
+  <path d="M62 52 H178" stroke="#ff7ab8" stroke-width="6" stroke-linecap="round"/>
+  <!-- Seat cushions -->
+  <rect x="48" y="84" width="72" height="32" rx="12" fill="#ff4fa0" stroke="#111" stroke-width="5"/>
+  <rect x="120" y="84" width="72" height="32" rx="12" fill="#ff4fa0" stroke="#111" stroke-width="5"/>
+  <!-- Base frame -->
+  <rect x="40" y="108" width="160" height="16" rx="7" fill="#6a2cff" stroke="#111" stroke-width="5"/>
+  <!-- Armrests -->
+  <rect x="26" y="72" width="28" height="52" rx="14" fill="#ff2d8a" stroke="#111" stroke-width="5"/>
+  <rect x="186" y="72" width="28" height="52" rx="14" fill="#ff2d8a" stroke="#111" stroke-width="5"/>
+  <!-- Flying phone & lightning accents -->
+  <g transform="translate(178,18) rotate(18)">
+    <rect x="0" y="0" width="22" height="34" rx="5" fill="#2ec4ff" stroke="#111" stroke-width="4"/>
+    <rect x="4" y="5" width="14" height="20" rx="2" fill="#fffdf6" stroke="#111" stroke-width="2"/>
+    <circle cx="11" cy="29.5" r="2" fill="#111"/>
+  </g>
+  <polygon points="44,18 30,40 42,40 34,58 58,34 45,34" fill="#2bd96b" stroke="#111" stroke-width="3.5" stroke-linejoin="round"/>
+</svg>
