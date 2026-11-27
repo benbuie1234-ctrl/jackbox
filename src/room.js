@@ -348,6 +348,24 @@ export class Room extends DurableObject {
     const p = pid && s.players[pid];
     if (!p) return void this.send(ws, { t: 'unknown' });
 
+    if (m.t === 'edit' && s.phase === 'lobby') {
+      const name = this.cleanName(m.name);
+      if (!name) return void this.send(ws, { t: 'error', code: 'NAME', msg: 'Type a name first!' });
+      const clash = Object.values(s.players).find((x) => x.id !== pid && x.name === name && !x.bot);
+      if (clash && clash.connected && this.socketsFor(clash.id).length) {
+        return void this.send(ws, { t: 'error', code: 'NAME_TAKEN', msg: `Someone is already ${name}. Pick another name!` });
+      }
+      p.name = name;
+      if (typeof m.avatar === 'string' && m.avatar.startsWith('data:image/') && m.avatar.length < 200000) {
+        await this.ctx.storage.put('av:' + pid, m.avatar);
+        this.toHosts({ t: 'avatar', id: pid, data: m.avatar });
+      } else if (m.avatar === null) {
+        await this.ctx.storage.delete('av:' + pid);
+        this.toHosts({ t: 'avatar', id: pid, data: null });
+      }
+      return void (await this.commit());
+    }
+
     if (m.t === 'react') {
       if (!EMOJI.includes(m.e)) return;
       const now = Date.now();

@@ -44,7 +44,7 @@ function start(s) {
 function onMsg(m) {
   if (m.t === 'state') render(m.v);
   else if (m.t === 'avatars') { avatars = m.map || {}; refreshAvatars(); }
-  else if (m.t === 'avatar') { avatars[m.id] = m.data; refreshAvatars(m.id); }
+  else if (m.t === 'avatar') { if (m.data) avatars[m.id] = m.data; else delete avatars[m.id]; refreshAvatars(m.id); }
   else if (m.t === 'react') floatEmoji(m.e);
   else if (m.t === 'slide') setNeedle(m.v);
   else if (m.t === 'error' && m.code === 'BAD_HOST') { localStorage.removeItem(LS); location.href = '/host?new'; }
@@ -441,6 +441,7 @@ const SCENES = {
           if (!first && !lobbySeen.has(p.id)) audio.pop(i);
           lobbySeen.add(p.id);
         }
+        const tag = $('.tag', el); if (tag && tag.textContent !== p.name) tag.textContent = p.name;
         el.style.opacity = p.connected || p.bot ? 1 : 0.45;
         const isVip = v.vip === p.id;
         const crown = $('.crown', el);

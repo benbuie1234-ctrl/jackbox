@@ -105,21 +105,22 @@ function showReplaced() {
 
 // ---------------------------------------------------------------- JOIN
 let doodleDirty = false;
-function showJoin(msg) {
-  V = null;
-  key = 'join';
+function showJoin(msg, editMode = false) {
+  if (!editMode) V = null;
+  key = editMode ? 'edit' : 'join';
   bar.classList.add('hidden');
   document.body.className = '';
   const params = new URLSearchParams(location.search);
-  const code = (params.get('code') || saved.code || '').toUpperCase().slice(0, 4);
+  const code = (editMode && V ? V.code : (params.get('code') || saved.code || '')).toUpperCase().slice(0, 4);
   scr.innerHTML = `
-    <img class="join-emblem" src="/img/emblem-lobby.svg" alt="" />
-    <div class="logo">COUCH CHAOS</div>
-    <label class="f">ROOM CODE</label>
-    <input class="t code" id="code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" value="${esc(code)}" />
-    <label class="f">YOUR NAME</label>
-    <input class="t" id="name" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="NAME" value="${esc(saved.name || '')}" />
-    <label class="f">DRAW YOURSELF! (3 SECONDS, NO PRESSURE)</label>
+    <div class="join-head"><img class="join-emblem" src="/img/emblem-lobby.svg" alt="" /><div class="logo">COUCH CHAOS</div></div>
+    <div class="join-row">
+      <div><label class="f">ROOM CODE</label>
+        <input class="t code" id="code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" value="${esc(code)}" ${editMode ? 'disabled' : ''} /></div>
+      <div><label class="f">YOUR NAME</label>
+        <input class="t" id="name" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="NAME" value="${esc(editMode && V ? V.me.name : (saved.name || ''))}" /></div>
+    </div>
+    <label class="f">DRAW YOURSELF! (OPTIONAL)</label>
     <div class="doodle">
       <canvas id="cv" width="240" height="240"></canvas>
       <div class="swatches">
@@ -130,14 +131,27 @@ function showJoin(msg) {
         <button class="clear" id="clr">CLEAR</button>
       </div>
     </div>
-    <button class="btn go" id="join">JOIN GAME</button>
+    <button class="btn go" id="join">${editMode ? 'SAVE CHANGES' : 'JOIN GAME'}</button>
+    ${editMode ? '<button class="btn white small" id="cancel-edit">CANCEL</button>' : ''}
     ${msg ? `<div class="note">${esc(msg)}</div>` : ''}
   `;
   const ci = $('#code');
   ci.addEventListener('input', () => { ci.value = ci.value.toUpperCase().replace(/[^A-Z]/g, ''); });
   setupDoodle();
-  $('#join').onclick = doJoin;
+  $('#join').onclick = () => (editMode ? doEdit() : doJoin());
+  if (editMode) $('#cancel-edit').onclick = () => { key = null; if (V) render(V); };
   $('#name').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
+}
+
+function doEdit() {
+  const name = $('#name').value.trim().toUpperCase();
+  if (!name) return toast('Type your name!');
+  const avatar = doodleDirty ? $('#cv').toDataURL('image/png') : null;
+  saved.name = name;
+  saved.avatar = avatar;
+  save();
+  key = null;
+  conn && conn.send({ t: 'edit', name, avatar });
 }
 
 function setupDoodle() {
@@ -261,13 +275,21 @@ function render(v) {
 function update(v) {
   const c = $('[data-count]');
   if (c) c.textContent = v.count;
+  const vn = $('[data-vipname]');
+  if (vn) vn.textContent = v.vipName;
+  const kid = $('#kid');
+  if (kid) kid.classList.toggle('on', !!v.settings.kid);
+  for (const b of $$('[data-g]')) {
+    const min = Number(b.dataset.min || 0);
+    b.classList.toggle('need-more', v.count < min);
+  }
 }
 
 function renderBar(v) {
   bar.classList.remove('hidden');
   bar.innerHTML = `<div class="me"><div class="dot" style="background:${v.me.color}"></div><span>${v.me.vip ? '👑 ' : ''}${esc(v.me.name)}</span></div>
     <div class="sp"></div><div class="clock hidden" id="clock"></div>
-    ${v.me.vip && v.game ? '<button class="menu" id="vmenu">⋯</button>' : ''}`;
+    ${v.me.vip ? '<button class="menu" id="vmenu">⋯</button>' : ''}`;
   const m = $('#vmenu');
   if (m) m.onclick = vipMenu;
   tickClock();
@@ -279,17 +301,20 @@ function vipMenu() {
   const others = (V && V.players || []).filter((p) => p.id !== V.me.id);
   const kicks = others.length
     ? `<div class="kicker" style="margin-top:6px">KICK AFK / DUPLICATE PLAYER</div>` + others.map((p) => `<button class="btn white small" data-kick="${p.id}">🚫 Kick ${esc(p.name)}${p.connected || p.bot ? '' : ' (disconnected)'}</button>`).join('')
+    : `<div class="note" style="color:var(--ink);text-shadow:none;font-size:14px">No other players to kick yet.</div>`;
+  const gameBtns = V && V.game
+    ? `<button class="btn go small" id="vm-skip">⏭ SKIP CURRENT TIMER / ADVANCE</button>
+       <button class="btn red small" id="vm-end">END GAME → BACK TO LOBBY</button>`
     : '';
   d.innerHTML = `<div class="box"><div class="kicker">👑 VIP CONTROLS</div>
-    <button class="btn go small" id="vm-skip">⏭ SKIP CURRENT TIMER / ADVANCE</button>
-    <button class="btn red small" id="vm-end">END GAME → BACK TO LOBBY</button>
+    ${gameBtns}
     ${kicks}
     <button class="btn white small" id="vm-x">CLOSE</button></div>`;
   document.body.appendChild(d);
   $('#vm-x', d).onclick = () => d.remove();
   d.onclick = (e) => { if (e.target === d) d.remove(); };
-  $('#vm-skip', d).onclick = () => { vip('skip-phase'); d.remove(); };
-  $('#vm-end', d).onclick = () => { if (confirm('End this game for everyone?')) { vip('end'); d.remove(); } };
+  const sk = $('#vm-skip', d); if (sk) sk.onclick = () => { vip('skip-phase'); d.remove(); };
+  const en = $('#vm-end', d); if (en) en.onclick = () => { if (confirm('End this game for everyone?')) { vip('end'); d.remove(); } };
   for (const b of $$('[data-kick]', d)) b.onclick = () => { if (confirm(`Kick ${b.textContent.replace('🚫 Kick ', '')}?`)) { vip('kick', { id: b.dataset.kick }); d.remove(); } };
 }
 
@@ -400,18 +425,18 @@ const SCREENS = {
   lobby(v) {
     const addEdit = () => {
       put(`<button class="btn white small" id="editme">✏️ EDIT NAME / REDRAW DOODLE</button>`);
-      $('#editme').onclick = () => { if (conn) conn.close(); conn = null; forget(); showJoin(); };
+      $('#editme').onclick = () => showJoin('', true);
     };
     if (!v.me.vip) {
       put(`<div class="logo">YOU'RE IN!</div>
         <div class="box tilt" style="text-align:center"><div class="prm">Look for yourself on the TV.</div>
-        <div class="note" style="color:var(--ink);text-shadow:none;margin-top:6px">👑 ${esc(v.vipName)} picks the game.</div></div>`);
+        <div class="note" style="color:var(--ink);text-shadow:none;margin-top:6px">👑 <span data-vipname>${esc(v.vipName)}</span> picks the game.</div></div>`);
       reactions();
       return addEdit();
     }
     put(`<div class="h1">👑 YOU'RE THE VIP</div><div class="note">Pick a game when everyone's in (<b data-count>${v.count}</b> players)</div>`);
     for (const g of v.games) {
-      put(`<button class="btn game ${g.id}" data-g="${g.id}"><img class="g-emblem" src="/img/emblem-${g.id}.svg" alt="" /><span class="g-copy"><span class="t">${esc(g.title)}</span><span class="sub">${esc(g.tagline)} · ${g.min}+ players</span></span></button>`);
+      put(`<button class="btn game ${g.id} ${v.count < g.min ? 'need-more' : ''}" data-g="${g.id}" data-min="${g.min}"><img class="g-emblem" src="/img/emblem-${g.id}.svg" alt="" /><span class="g-copy"><span class="t">${esc(g.title)}</span><span class="sub">${esc(g.tagline)} · ${g.min}+ players</span></span></button>`);
     }
     put(`<div class="toggle ${v.settings.kid ? 'on' : ''}" id="kid"><span>🧒 KID MODE<br><small style="font-family:var(--body)">50% longer timers</small></span><div class="sw"></div></div>
       <label class="f" style="margin-top:4px">🏆 WINNER'S PRIZE (OPTIONAL)</label>
