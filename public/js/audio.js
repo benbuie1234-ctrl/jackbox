@@ -3,6 +3,28 @@ let ctx, master, musicBus, sfxBus, noiseBuf, comp;
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
 const THEMES = {
+  // Tee Time: bouncy major-key groove, handclap backbeat, bright stabs.
+  teetime: {
+    bpm: 122, root: 48, swing: 0.1,
+    prog: [[0, 'maj7'], [9, 'm7'], [5, 'maj7'], [7, '7']],
+    bass: [0, null, 12, null, 7, null, 12, 0, null, 0, 12, null, 7, 10, 12, null],
+    kick: [1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0],
+    snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
+    hat: [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+    stab: [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1],
+    stabWave: 'square', bell: true,
+  },
+  // Chaos Medley standings: big, driving "halftime show" vamp.
+  medley: {
+    bpm: 128, root: 50, swing: 0,
+    prog: [[0, 'm7'], [-2, 'maj7'], [-4, 'maj7'], [-2, '7']],
+    bass: [0, 12, 0, 12, 0, 12, 0, 12, 0, 12, 0, 12, 7, 12, 10, 12],
+    kick: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+    hat: [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+    stab: [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    stabWave: 'sawtooth',
+  },
   lobby: {
     bpm: 106, root: 53, swing: 0.12,
     prog: [[0, 'maj7'], [5, 'maj7'], [-3, 'm7'], [2, 'm7']],

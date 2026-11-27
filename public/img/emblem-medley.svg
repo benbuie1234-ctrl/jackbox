@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Hard offset shadow -->
+  <circle cx="106" cy="106" r="84" fill="#111"/>
+  <!-- Outer badge -->
+  <circle cx="100" cy="100" r="84" fill="#6a2cff" stroke="#111" stroke-width="6"/>
+  <!-- 3-color pie wedges representing Zinger + Hunch + Tee Time -->
+  <clipPath id="mclip"><circle cx="100" cy="100" r="76"/></clipPath>
+  <g clip-path="url(#mclip)">
+    <polygon points="100,100 100,10 190,145" fill="#ff2d8a"/>
+    <polygon points="100,100 190,145 10,145" fill="#f6b40e"/>
+    <polygon points="100,100 10,145 100,10" fill="#22c79a"/>
+  </g>
+  <circle cx="100" cy="100" r="76" stroke="#111" stroke-width="5"/>
+  <!-- Giant golden championship crown + star -->
+  <path d="M46 130 L56 68 L84 96 L100 54 L116 96 L144 68 L154 130 Z" fill="#ffd23f" stroke="#111" stroke-width="5.5" stroke-linejoin="round"/>
+  <rect x="48" y="130" width="104" height="18" rx="6" fill="#fffdf6" stroke="#111" stroke-width="5"/>
+  <circle cx="56" cy="64" r="8" fill="#ff2d8a" stroke="#111" stroke-width="4"/>
+  <circle cx="100" cy="50" r="9" fill="#2ec4ff" stroke="#111" stroke-width="4"/>
+  <circle cx="144" cy="64" r="8" fill="#2bd96b" stroke="#111" stroke-width="4"/>
+</svg>

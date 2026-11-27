@@ -311,3 +311,25 @@ export const FAKER_TASKS = {
     ],
   },
 };
+
+// ---------------- Tee Time ----------------
+// Inspiration for each drawing (players can ignore it).
+export const TEE_DRAW_PROMPTS = [
+  'a turkey on vacation', 'a very proud potato', 'a cat with a mustache', 'a dinosaur at the dentist',
+  'your dream sandwich', 'a grumpy cloud', 'a pie that\'s up to something', 'a hot dog superhero',
+  'a squirrel CEO', 'the world\'s fanciest sock', 'a robot grandma', 'a snowman at the beach',
+  'a llama in a tuxedo', 'an angry pancake', 'a ghost who loves disco', 'a shark eating spaghetti',
+  'a frog on a skateboard', 'a sad broccoli', 'a monster under the bed (but cute)', 'an alien tourist',
+  'a cow doing yoga', 'a pickle with a secret', 'a duck in sunglasses', 'a pirate hamster',
+  'the family dog as a king', 'a cupcake with muscles', 'a sleepy volcano', 'a banana on a date',
+  'a wizard who lost his hat', 'a penguin at a pool party', 'a toaster with feelings', 'a giant meatball',
+];
+
+export const TEE_SLOGAN_FALLBACKS = [
+  'I SURVIVED THANKSGIVING', 'GRAVY IS A BEVERAGE', 'DON\'T TALK TO ME BEFORE PIE', 'PROFESSIONAL NAPPER',
+  'WORLD\'S OKAYEST COUSIN', 'I PAUSED MY GAME FOR THIS', 'ASK ME ABOUT MY SOCKS', 'BUILT DIFFERENT (BADLY)',
+  'NO THOUGHTS, JUST SNACKS', 'TEAM LEFTOVERS', 'I CAME FOR THE ROLLS', 'CERTIFIED CHAOS',
+  'THIS IS MY FANCY SHIRT', 'SORRY I\'M LATE, I DIDN\'T WANT TO COME', 'POWERED BY STUFFING',
+  'I\'M NOT YELLING, THIS IS MY FAMILY VOICE', 'EAT. SLEEP. PIE. REPEAT.', 'LIVE, LAUGH, LASAGNA',
+  'MY OTHER SHIRT IS ALSO A SHIRT', 'ALLERGIC TO MORNINGS', 'FREE HUGS (TERMS APPLY)', 'BORN TO SNACK',
+];

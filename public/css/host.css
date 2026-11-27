@@ -278,3 +278,36 @@ body.theme-podium .sunburst { display: block; opacity: 0.35; }
 .rule:nth-child(even) { --r: 1deg; transform: rotate(1deg); }
 .rule .n { font-family: var(--display); background: var(--yellow); border: 3px solid var(--ink); border-radius: 50%; width: 5.6vh; height: 5.6vh; display: grid; place-items: center; flex: none; }
 .phonehint { font-size: 9vh; animation: wobble 1s ease-in-out infinite; display: inline-block; }
+
+/* ---------- Tee Time + Chaos Medley ---------- */
+body.theme-teetime { background: url('/img/teetime-bg.svg') center/cover no-repeat, radial-gradient(ellipse at 50% 30%, #ff9a3d 0%, #ff5a1f 45%, #a3240a 100%); }
+body.theme-teetime .sunburst { display: block; opacity: .3; }
+body.theme-medley { background: url('/img/medley-bg.svg') center/cover no-repeat, radial-gradient(ellipse at 50% 30%, #8a52ff 0%, var(--pink) 55%, #3c0fb0 100%); }
+body.theme-medley .sunburst { display: block; opacity: .35; }
+
+.arenabox { width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
+.arena { display: flex; align-items: flex-start; justify-content: center; gap: 7vw; width: 100%; position: relative; }
+.arena .vs { top: 42%; }
+.arena-side { width: min(30vw, 46vh); display: flex; flex-direction: column; align-items: center; position: relative; transition: transform .5s cubic-bezier(.3,1.6,.5,1), filter .4s; }
+.arena-side.l { --r: -2deg; transform: rotate(-2deg); }
+.arena-side.r { --r: 2deg; transform: rotate(2deg); }
+.arena-side .shirt { width: 100%; }
+.arena-side.win { transform: scale(1.08); z-index: 2; }
+.arena-side.lose { filter: saturate(.4) brightness(.85); transform: scale(.92); }
+.arena-side.ko { filter: grayscale(1) brightness(.75); transform: scale(.86) rotate(-14deg) translateY(4vh); }
+.champtag { font-family: var(--display); font-size: 2.6vh; background: var(--yellow); border: 3px solid var(--ink); border-radius: 10px; padding: .3vh 1.2vw; box-shadow: 3px 3px 0 var(--ink); margin-bottom: 1vh; }
+.champtag.dim { background: var(--paper); }
+.arena-side .tally { font-family: var(--display); font-size: 3.4vh; color: #fff; -webkit-text-stroke: .15vh var(--ink); paint-order: stroke fill; margin-top: 1vh; }
+.arena-side .tally .cnt { font-size: 5vh; color: var(--yellow); }
+.arena-side .pts { position: absolute; top: 8%; left: -4%; font-family: var(--display); font-size: 4.4vh; background: var(--green); padding: .4vh 1.2vw; border: var(--border); border-radius: 14px; box-shadow: var(--shadow); transform: rotate(-8deg); }
+.credits { display: flex; flex-wrap: wrap; justify-content: center; gap: .6vh 1vw; margin-top: 1vh; font-size: 2vh; color: #fff; -webkit-text-stroke: .08vh var(--ink); paint-order: stroke fill; text-align: center; }
+.credits span { display: inline-flex; align-items: center; gap: .5vw; background: rgba(17,17,17,.55); border-radius: 10px; padding: .3vh .8vw; -webkit-text-stroke: 0; }
+.credits .av { width: 3.4vh; font-size: 1.6vh; border-width: 2px; box-shadow: none; }
+.credits.big { font-size: 2.8vh; margin-top: 2vh; }
+.credits.big .av { width: 4.6vh; font-size: 2vh; }
+.champwrap { width: min(34vw, 50vh); margin-top: 1vh; }
+.champwrap .shirt { width: 100%; }
+.medley-head { display: flex; align-items: center; gap: 2vw; }
+.medley-emblem { width: 12vh; height: 12vh; object-fit: contain; }
+.nextup { display: flex; align-items: center; gap: 1.4vw; padding: 1.2vh 2vw; margin-top: 2.4vh; font-family: var(--display); font-size: 3.4vh; --r: -1.5deg; transform: rotate(-1.5deg); background: var(--yellow); }
+.nextup img { width: 7vh; height: 7vh; object-fit: contain; }

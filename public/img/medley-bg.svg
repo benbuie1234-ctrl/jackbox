@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="mg" cx="50%" cy="35%" r="80%">
+      <stop offset="0%" stop-color="#ff2d8a"/>
+      <stop offset="48%" stop-color="#6a2cff"/>
+      <stop offset="100%" stop-color="#140842"/>
+    </radialGradient>
+    <linearGradient id="mbeam1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd23f" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="#ffd23f" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="mbeam2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2ec4ff" stop-opacity="0.36"/>
+      <stop offset="100%" stop-color="#2ec4ff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#mg)"/>
+  <!-- Triple-color diagonal championship ribbons -->
+  <polygon points="0,0 420,0 160,900 0,900" fill="#1638ff" opacity="0.28"/>
+  <polygon points="1180,0 1600,0 1600,900 1440,900" fill="#0d8a8f" opacity="0.32"/>
+  <polygon points="280,0 380,0 820,900 220,900" fill="url(#mbeam1)"/>
+  <polygon points="1220,0 1320,0 1380,900 780,900" fill="url(#mbeam2)"/>
+  <!-- Championship marquee floor -->
+  <rect x="0" y="755" width="1600" height="145" fill="#14083b" stroke="#111" stroke-width="6"/>
+  <g fill="#ffd23f" stroke="#111" stroke-width="3">
+    <circle cx="140" cy="44" r="11"/><circle cx="300" cy="44" r="11"/><circle cx="460" cy="44" r="11"/><circle cx="620" cy="44" r="11"/><circle cx="780" cy="44" r="11"/><circle cx="940" cy="44" r="11"/><circle cx="1100" cy="44" r="11"/><circle cx="1260" cy="44" r="11"/><circle cx="1420" cy="44" r="11"/>
+  </g>
+</svg>

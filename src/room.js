@@ -1,11 +1,19 @@
 import { DurableObject } from 'cloudflare:workers';
 import zinger from './games/zinger.js';
 import hunch from './games/hunch.js';
-import faker from './games/faker.js';
+import teetime from './games/teetime.js';
 import { FALLBACKS, BOT_NAMES } from './content.js';
 import { pick, rid, clamp } from './util.js';
 
-export const GAMES = { zinger, hunch, faker };
+// Faker Among Us lives in src/games/faker.js but is retired from the lineup.
+export const GAMES = { zinger, hunch, teetime };
+export const MEDLEY = {
+  title: 'CHAOS MEDLEY',
+  tagline: 'Zinger, Hunch, then Tee Time. One show, one score.',
+  min: 3,
+  legs: ['zinger', 'hunch', 'teetime'],
+};
+const PICKER = ['zinger', 'hunch', 'teetime', 'medley'];
 const COLORS = ['#ff3b6b', '#2ec4ff', '#ffd23f', '#5fe35a', '#b26bff', '#ff8c2e', '#2effc4', '#ff6bd6', '#6b8cff', '#d4ff3a'];
 const EMOJI = ['😂', '😱', '👏', '🍅'];
 const MAX_PLAYERS = 10;
@@ -183,6 +191,7 @@ export class Room extends DurableObject {
   }
 
   timeout() {
+    if (this.s.phase === 'medley-standings') return this.startLeg(this.s.medley.li);
     const G = this.G();
     if (this.s.phase === 'intro' && G) return G.begin(this);
     if (G) return G.timeout(this);
@@ -272,6 +281,7 @@ export class Room extends DurableObject {
       gv: G ? G.hostView(this) : null,
       podium: s.phase === 'podium' ? s.podium : null,
       lastType: s.lastType,
+      medley: this.medleyView(),
     };
   }
 
@@ -287,12 +297,16 @@ export class Room extends DurableObject {
       count: s.order.length,
       game: s.game ? { type: s.game.type, title: G.title } : null,
       pv: G && p.inGame ? G.playerView(this, pid) : null,
+      medley: this.medleyView(),
     };
     if (vip) {
       v.players = this.publicPlayers();
     }
     if (s.phase === 'lobby') {
-      v.games = Object.entries(GAMES).map(([id, g]) => ({ id, title: g.title, tagline: g.tagline, min: g.min }));
+      v.games = PICKER.map((id) => {
+        const g = id === 'medley' ? MEDLEY : GAMES[id];
+        return { id, title: g.title, tagline: g.tagline, min: g.min };
+      });
     }
     if (s.phase === 'podium' && s.podium) {
       const rank = s.podium.ranking.findIndex((r) => r.id === pid);
@@ -313,6 +327,7 @@ export class Room extends DurableObject {
         const map = {};
         for (const [k, val] of avs) map[k.slice(3)] = val;
         this.send(ws, { t: 'avatars', map });
+        if (s.game && s.game.type === 'teetime') this.send(ws, { t: 'arts', map: await this.artMap() });
         this.send(ws, { t: 'state', now: Date.now(), v: this.hostView() });
         return;
       }
@@ -405,6 +420,7 @@ export class Room extends DurableObject {
     for (const w of this.socketsFor(pid)) if (w !== ws) try { w.close(4001, 'replaced'); } catch {}
     this.s.players[pid].connected = true;
     this.send(ws, { t: 'welcome', pid, code: this.s.code });
+    if (this.s.game && this.s.game.type === 'teetime') this.send(ws, { t: 'arts', map: await this.artMap() });
     await this.commit();
   }
 
@@ -512,13 +528,14 @@ export class Room extends DurableObject {
     if (a === 'start' || a === 'again') {
       if (s.phase !== 'lobby' && s.phase !== 'podium') return;
       const type = a === 'again' ? s.lastType : m.game;
-      const G = GAMES[type];
+      const G = type === 'medley' ? MEDLEY : GAMES[type];
       if (!G) return;
       const count = s.order.length;
       if (count < G.min) {
         return void this.send(ws, { t: 'error', code: 'MIN', msg: `${G.title} needs at least ${G.min} players.` });
       }
-      this.startGame(type);
+      if (type === 'medley') this.startMedley();
+      else this.startGame(type);
       return void (await this.commit());
     }
     if (a === 'skip' && s.phase === 'intro') {
@@ -531,9 +548,8 @@ export class Room extends DurableObject {
     }
   }
 
-  startGame(type) {
+  resetScores() {
     const s = this.s;
-    const G = GAMES[type];
     for (const id of s.order) {
       s.players[id].inGame = true;
       s.players[id].score = 0;
@@ -541,15 +557,70 @@ export class Room extends DurableObject {
     s.stats = {};
     s.top = null;
     s.podium = null;
+  }
+
+  startGame(type) {
+    const s = this.s;
+    this.resetScores();
+    s.medley = null;
     s.game = { type };
-    Object.assign(s.game, G.init(this));
+    Object.assign(s.game, GAMES[type].init(this, {}));
     this.phase('intro', 22, { hostPaced: true });
+  }
+
+  // Chaos Medley: three quick legs, scores and stats carry across.
+  startMedley() {
+    this.resetScores();
+    this.s.medley = { legs: [...MEDLEY.legs], li: 0 };
+    this.startLeg(0);
+  }
+
+  startLeg(li) {
+    const s = this.s;
+    const type = s.medley.legs[li];
+    for (const id of s.order) s.players[id].inGame = true;
+    s.game = { type, medley: true };
+    Object.assign(s.game, GAMES[type].init(this, { quick: true }));
+    this.phase('intro', 22, { hostPaced: true });
+  }
+
+  medleyView() {
+    const m = this.s.medley;
+    if (!m) return null;
+    return {
+      li: m.li, legs: m.legs.map((t) => ({ type: t, title: GAMES[t].title })),
+      next: this.s.phase === 'medley-standings' ? { type: m.legs[m.li], title: GAMES[m.legs[m.li]].title } : null,
+    };
+  }
+
+  // Tee Time drawings: kept out of the state blob, streamed like avatars.
+  async artMap() {
+    const out = {};
+    const list = await this.ctx.storage.list({ prefix: 'tt:' });
+    for (const [k, val] of list) out[k.slice(3)] = val;
+    return out;
+  }
+
+  sendArt(id, data) {
+    const str = JSON.stringify({ t: 'art', id, data });
+    for (const ws of this.ctx.getWebSockets()) {
+      const a = ws.deserializeAttachment() || {};
+      if (a.ok) this.send(ws, str);
+    }
+  }
+
+  clearArt() {
+    this.ctx.storage.list({ prefix: 'tt:' }).then((m) => {
+      const keys = [...m.keys()];
+      for (let i = 0; i < keys.length; i += 100) this.ctx.storage.delete(keys.slice(i, i + 100));
+    });
   }
 
   toLobby() {
     const s = this.s;
     s.game = null;
     s.podium = null;
+    s.medley = null;
     for (const id of Object.keys(s.players)) {
       if (s.players[id].left) { delete s.players[id]; this.ctx.storage.delete('av:' + id); }
     }
@@ -561,6 +632,14 @@ export class Room extends DurableObject {
   finish() {
     const s = this.s;
     const G = this.G();
+    const med = s.medley;
+    if (med && med.li < med.legs.length - 1) {
+      med.li++;
+      s.game = null;
+      for (const id of s.order) s.players[id].inGame = true;
+      this.phase('medley-standings', 16, { hostPaced: true, data: { done: med.li } });
+      return;
+    }
     const ranking = this.active()
       .map((p) => ({ id: p.id, name: p.name, color: p.color, score: p.score }))
       .sort((a, b) => b.score - a.score);
@@ -581,12 +660,15 @@ export class Room extends DurableObject {
     if (speed) awards.push({ title: 'SPEED DEMON', icon: '⚡', id: speed.id, detail: `answers in ${(-speed.v / 1000).toFixed(1)}s on average` });
     const fav = best((id) => st(id).got || null);
     if (fav) awards.push({ title: 'CROWD FAVORITE', icon: '💖', id: fav.id, detail: `${fav.v} reactions from the couch` });
-    if (G.awards) for (const aw of G.awards(this, st, best)) if (aw) awards.push(aw);
+    const types = med ? med.legs : [s.game.type];
+    for (const t of types) if (GAMES[t].awards) for (const aw of GAMES[t].awards(this, st, best)) if (aw) awards.push(aw);
     const hype = best((id) => st(id).sent || null);
     if (hype) awards.push({ title: 'HYPE MACHINE', icon: '📣', id: hype.id, detail: `sent ${hype.v} reactions` });
     for (const aw of awards) aw.name = this.name(aw.id);
-    s.podium = { ranking, awards: awards.slice(0, 4), top: s.top, title: G.title, type: s.game.type };
-    s.lastType = s.game.type;
+    const title = med ? MEDLEY.title : G.title;
+    const type = med ? 'medley' : s.game.type;
+    s.podium = { ranking, awards: awards.slice(0, med ? 6 : 4), top: s.top, title, type };
+    s.lastType = type;
     s.game = null;
     this.phase('podium', 0);
   }

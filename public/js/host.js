@@ -13,6 +13,7 @@ let avatars = {};
 let choreo = 0; // bumps on every phase change; stale choreography stops itself
 let curScene = null;
 let lobbySeen = new Set();
+let art = {}; // Tee Time drawings by id
 
 // ---------------------------------------------------------------- boot
 async function boot() {
@@ -47,6 +48,8 @@ function onMsg(m) {
   else if (m.t === 'avatar') { if (m.data) avatars[m.id] = m.data; else delete avatars[m.id]; refreshAvatars(m.id); }
   else if (m.t === 'react') floatEmoji(m.e);
   else if (m.t === 'slide') setNeedle(m.v);
+  else if (m.t === 'arts') { art = m.map || {}; refreshArt(); }
+  else if (m.t === 'art') { art[m.id] = m.data; refreshArt(m.id); }
   else if (m.t === 'error' && m.code === 'BAD_HOST') { localStorage.removeItem(LS); location.href = '/host?new'; }
 }
 
@@ -58,6 +61,24 @@ const avInner = (p) =>
 const av = (p, cls = '') => `<div class="av ${cls}" style="--c:${p.color}" data-av="${p.id}">${avInner(p)}</div>`;
 function refreshAvatars(id) {
   for (const el of $$(id ? `[data-av="${id}"]` : '[data-av]')) el.innerHTML = avInner(P(el.dataset.av));
+}
+function refreshArt(id) {
+  for (const el of $$(id ? `[data-art="${id}"]` : '[data-art]')) if (art[el.dataset.art]) el.src = art[el.dataset.art];
+}
+// A printed T-shirt: comic silhouette in the shirt color, drawing + slogan on the chest.
+const SHIRT_PATH = 'M128 22 L166 8 Q200 46 234 8 L272 22 L388 86 L348 170 L306 146 L306 404 L94 404 L94 146 L52 170 L12 86 Z';
+const DARK = ['#1d1d22', '#1638ff'];
+function shirtHTML(sh, cls = '') {
+  if (!sh) return '';
+  const ink = DARK.includes(sh.c) ? '#fffdf6' : '#111';
+  const pic = sh.d
+    ? `<img data-art="${sh.d}" src="${art[sh.d] || ''}" alt="" />`
+    : '<div class="noart">🤷</div>';
+  return `<div class="shirt ${cls}" style="--ink:${ink}">
+    <svg viewBox="0 0 400 420" aria-hidden="true"><path d="${SHIRT_PATH}" fill="${sh.c}" stroke="#111" stroke-width="10" stroke-linejoin="round"/>
+      <path d="M166 8 Q200 46 234 8" fill="none" stroke="#111" stroke-width="10"/></svg>
+    <div class="print">${pic}<div class="sl">${esc(sh.text)}</div></div>
+    ${sh.wins ? `<div class="streak">🏆 ×${sh.wins}</div>` : ''}</div>`;
 }
 const h = (html) => {
   const t = document.createElement('template');
@@ -206,11 +227,14 @@ function wipeTo(fn) {
 function setTheme(v) {
   let t = 'lobby';
   if (v.phase === 'podium') t = 'podium';
+  else if (v.phase === 'medley-standings') t = 'medley';
   else if (v.game) t = v.game.type;
   document.body.className = 'theme-' + t;
   audio.setTheme(t === 'podium' ? 'lobby' : t);
-  const title = v.game ? v.game.title : v.phase === 'podium' && v.podium ? v.podium.title : null;
-  $('#logo').innerHTML = title ? `${esc(title)}<small>COUCH CHAOS</small>` : 'COUCH CHAOS';
+  const md = v.medley;
+  const title = v.game ? v.game.title : v.phase === 'medley-standings' ? 'CHAOS MEDLEY' : v.phase === 'podium' && v.podium ? v.podium.title : null;
+  const small = md && v.game ? `CHAOS MEDLEY · LEG ${md.li + 1} OF ${md.legs.length}` : 'COUCH CHAOS';
+  $('#logo').innerHTML = title ? `${esc(title)}<small>${small}</small>` : 'COUCH CHAOS';
 }
 
 function setJoinBug(v) {
@@ -255,6 +279,8 @@ function renderStrip(v) {
   if (ph === 'z-vote' || ph === 'z-fvote' || ph === 'f-vote') { marks = gv.voted; who = gv.voters; }
   if (ph === 'h-bet') { marks = gv.betted; who = gv.bettors; }
   if (ph === 'f-task') marks = gv.ready;
+  if (ph === 't-draw' || ph === 't-slogan' || ph === 't-build') marks = gv.done;
+  if (ph === 't-vote') { marks = gv.voted; who = gv.voters; }
   if (!marks) { strip.innerHTML = ''; return; }
   const list = (who ? who.map(P) : inGame());
   const want = list.map((p) => p.id).join(',');
@@ -389,6 +415,19 @@ function matchScene(v, cont) {
   return box;
 }
 
+function arenaScene(v, cont) {
+  if (cont && $('.arenabox')) return $('.arenabox');
+  screen.innerHTML = '';
+  const g = v.gv;
+  const box = add('<div class="arenabox"></div>');
+  add(`<div class="sub" style="margin:0 0 1vh;font-size:2.8vh">BATTLE ${g.mi} OF ${g.of}</div>`, box);
+  add(`<div class="arena">
+      <div class="arena-side l">${g.L && g.L.wins ? '<div class="champtag">👑 CHAMP</div>' : '<div class="champtag dim">DEFENDER</div>'}${shirtHTML(g.L)}</div>
+      <div class="vs">VS</div>
+      <div class="arena-side r"><div class="champtag dim">CHALLENGER</div>${shirtHTML(g.R)}</div></div>`, box);
+  return box;
+}
+
 const SCENES = {
   unknown: { enter() {} },
 
@@ -461,10 +500,12 @@ const SCENES = {
   intro: {
     async enter(v, tk) {
       const g = v.game;
+      const md = v.medley;
+      if (md) add(`<div class="banner pop" style="--r:-2deg;margin-bottom:2vh">🌀 CHAOS MEDLEY · LEG ${md.li + 1} OF ${md.legs.length}</div>`);
       add(`<div class="intro-head"><img class="intro-emblem pop" src="/img/emblem-${esc(g.type)}.svg" alt="" /><div class="mega xl slam" style="--r:-3deg">${esc(g.title)}</div></div>`);
       const rules = add('<div class="intro-rules"></div>');
       audio.slam();
-      await say(`Welcome to ${g.title}!`);
+      await say(md ? (md.li === 0 ? `Welcome to the Chaos Medley! Three games, one score. Leg one: ${g.title}!` : `Leg ${md.li + 1}: ${g.title}!`) : `Welcome to ${g.title}!`);
       for (let i = 0; i < g.rules.length; i++) {
         if (!live(tk)) return;
         add(`<div class="card rule from-${i % 2 ? 'r' : 'l'}"><div class="n">${i + 1}</div><div>${esc(g.rules[i])}</div></div>`, rules);
@@ -592,7 +633,7 @@ const SCENES = {
   },
   'z-scores': {
     async enter(v, tk) {
-      const rows = scoreboard(v, v.gv.round >= 2 ? 'SCORES' : 'ROUND 1 SCORES', v.gv.round === 1 ? 'Round 2 is worth DOUBLE!' : 'Final round next!');
+      const rows = scoreboard(v, v.gv.round >= 2 || v.gv.quick ? 'SCORES' : 'ROUND 1 SCORES', v.gv.round === 1 && !v.gv.quick ? 'Round 2 is worth DOUBLE!' : 'Final round next!');
       await wait(900);
       if (rows[0]) await say(`${rows[0].name} is in the lead!`);
       await wait(2600);
@@ -949,6 +990,176 @@ const SCENES = {
     },
   },
 
+  // ---------------- TEE TIME ----------------
+  't-draw': {
+    enter(v) {
+      add(`<img class="intro-emblem pop" src="/img/emblem-teetime.svg" alt="" />`);
+      add(`<div class="mega l slam">DRAW ON<br>YOUR PHONE!</div>`);
+      add(`<div class="sub">${v.gv.quick ? 'One silly drawing' : 'Two silly drawings'}. Masterpieces optional.</div>`);
+      say(v.gv.quick ? 'Grab your phone and draw something silly!' : 'Grab your phones and draw two silly pictures!');
+    },
+  },
+  't-slogan': {
+    enter(v) {
+      add(`<div class="phonehint">✍️</div>`);
+      add(`<div class="mega l slam">WRITE<br>SLOGANS!</div>`);
+      add(`<div class="sub">Short. Punchy. Would look great on a shirt.</div>`);
+      say('Now write some punchy T-shirt slogans!');
+    },
+  },
+  't-build': {
+    enter(v) {
+      add(`<div class="phonehint">👕</div>`);
+      add(`<div class="mega l slam">MAKE YOUR<br>SHIRT!</div>`);
+      add(`<div class="sub">Mix other people's drawings and slogans into one perfect shirt.</div>`);
+      say("Time to make your shirt! Mix and match everybody's drawings and slogans.");
+    },
+  },
+  't-arena': {
+    async enter(v, tk) {
+      add(`<img class="intro-emblem pop" src="/img/emblem-teetime.svg" alt="" />`);
+      add(`<div class="mega xl slam yellow" style="--r:-4deg">SHIRT<br>BATTLE!</div>`);
+      add(`<div class="sub pop" style="animation-delay:.4s">${v.pd.n} shirts enter. Winner stays on. Last shirt standing is CHAMPION!</div>`);
+      audio.slam();
+      setTimeout(() => { shake(); audio.zing(); }, 450);
+      await say(`It's time for the T-shirt battle! ${v.pd.n} shirts enter, one shirt leaves. Winner stays on!`);
+      await wait(600);
+      if (live(tk)) done(v);
+    },
+  },
+  't-match': {
+    scene: 'arena',
+    restart: true,
+    async enter(v, tk) {
+      const box = arenaScene(v, false);
+      const [L, R] = [$('.arena-side.l', box), $('.arena-side.r', box)];
+      const vs = $('.vs', box);
+      [L, R, vs].forEach((e) => e.classList.add('invisible'));
+      await wait(250);
+      L.classList.remove('invisible'); L.classList.add('from-l'); audio.whoosh(0.35); setTimeout(() => audio.slam(), 300);
+      await wait(400);
+      await say(v.gv.L.wins ? `The champ: ${v.gv.L.text}` : `In this corner: ${v.gv.L.text}`);
+      if (!live(tk)) return;
+      await wait(700);
+      vs.classList.remove('invisible'); vs.classList.add('pop');
+      R.classList.remove('invisible'); R.classList.add('from-r'); audio.whoosh(0.35); setTimeout(() => audio.slam(), 300);
+      await wait(400);
+      await say(`And the challenger: ${v.gv.R.text}`);
+      await wait(500);
+      if (live(tk)) done(v);
+    },
+  },
+  't-vote': {
+    scene: 'arena',
+    enter(v, tk, cont) {
+      const box = arenaScene(v, cont);
+      $$('.invisible', box).forEach((e) => e.classList.remove('invisible'));
+      $$('.livebanner', box).forEach((e) => e.remove());
+      box.appendChild(h(`<div class="banner livebanner slam" style="--r:-2deg;margin-top:2vh">🗳️ VOTE FOR YOUR FAVORITE SHIRT!</div>`));
+      audio.ding();
+      say('Which shirt would you rather wear? Vote now!');
+    },
+  },
+  't-result': {
+    scene: 'arena',
+    async enter(v, tk, cont) {
+      const box = arenaScene(v, cont);
+      $$('.invisible', box).forEach((e) => e.classList.remove('invisible'));
+      $$('.livebanner', box).forEach((e) => e.remove());
+      const r = v.gv.res;
+      const sides = { L: $('.arena-side.l', box), R: $('.arena-side.r', box) };
+      for (const k of ['L', 'R']) sides[k].insertAdjacentHTML('beforeend', `<div class="tally"><span class="cnt">0</span> VOTES</div>`);
+      await wait(300);
+      const seq = [...r.L.map(() => 'L'), ...r.R.map(() => 'R')].sort(() => Math.random() - 0.5);
+      const cnt = { L: 0, R: 0 };
+      for (const k of seq) {
+        if (!live(tk)) return;
+        cnt[k]++;
+        $('.cnt', sides[k]).textContent = cnt[k];
+        audio.tick(k === 'L');
+        await wait(260);
+      }
+      await wait(500);
+      if (!live(tk)) return;
+      const credit = (sh) => `<div class="credits pop">
+        <span>${av(P(sh.by))} MADE BY <b>${esc(P(sh.by).name)}</b></span>
+        ${sh.artBy ? `<span>🎨 ART <b>${esc(P(sh.artBy).name)}</b></span>` : ''}
+        ${sh.slBy ? `<span>✍️ SLOGAN <b>${esc(P(sh.slBy).name)}</b></span>` : ''}</div>`;
+      sides.L.insertAdjacentHTML('beforeend', credit(v.gv.L));
+      sides.R.insertAdjacentHTML('beforeend', credit(v.gv.R));
+      if (r.none) {
+        stamp('NO VOTES!', '', box).style.top = '30%';
+        await say('Nobody voted! The champ stays on.');
+      } else {
+        const win = r.winner;
+        const lose = win === 'L' ? 'R' : 'L';
+        sides[win].classList.add('win');
+        sides[lose].classList.add(r.ko ? 'ko' : 'lose');
+        const wsh = v.gv[win];
+        const pts = r.pts[wsh.id] || 0;
+        sides[win].insertAdjacentHTML('beforeend', `<div class="pts pop">+${pts}</div>`);
+        if (r.ko) {
+          const st = stamp('KNOCKOUT!', 'zing', box);
+          st.style.top = '24%';
+          shake(); audio.zing(); confetti(130);
+          await say(`Knockout! ${P(wsh.by).name}'s shirt takes every single vote!`);
+        } else if (r.tie) {
+          stamp('TIE!', '', box).style.top = '30%';
+          await say("It's a tie! Ties go to the champ.");
+        } else {
+          audio.ding();
+          await say(`${P(wsh.by).name}'s shirt wins!`);
+        }
+      }
+      await wait(2000);
+      if (live(tk)) done(v);
+    },
+  },
+  't-champ': {
+    async enter(v, tk) {
+      const c = v.gv.champ;
+      if (!c) return done(v);
+      add(`<div class="mega m slam yellow">👑 CHAMPION SHIRT 👑</div>`);
+      const wrap = add(`<div class="champwrap invisible">${shirtHTML(c, 'big')}</div>`);
+      audio.hush(true);
+      audio.drumroll(1.8);
+      await wait(1900);
+      audio.hush(false);
+      if (!live(tk)) return;
+      wrap.classList.remove('invisible');
+      wrap.classList.add('slam');
+      audio.fanfare(); confetti(180); shake();
+      add(`<div class="credits big pop">
+        <span>${av(P(c.by))} MADE BY <b>${esc(P(c.by).name)}</b></span>
+        ${c.artBy ? `<span>🎨 ART <b>${esc(P(c.artBy).name)}</b></span>` : ''}
+        ${c.slBy ? `<span>✍️ SLOGAN <b>${esc(P(c.slBy).name)}</b></span>` : ''}
+        <span>🏆 ${c.wins} WIN${c.wins === 1 ? '' : 'S'}</span></div>`);
+      await say(`The champion shirt: ${c.text}! Made by ${P(c.by).name}!`);
+      await wait(2500);
+      if (live(tk)) done(v);
+    },
+  },
+
+  // ---------------- CHAOS MEDLEY ----------------
+  'medley-standings': {
+    async enter(v, tk) {
+      const md = v.medley;
+      const n = v.pd.done;
+      const next = md && md.next;
+      add(`<div class="medley-head"><img class="medley-emblem pop" src="/img/emblem-medley.svg" alt="" />
+        <div class="mega m slam">LEG ${n} OF ${md ? md.legs.length : 3} COMPLETE!</div></div>`);
+      const rows = scoreboard(v, 'CHAOS STANDINGS');
+      if (next) add(`<div class="card nextup pop" style="animation-delay:1.2s"><span>NEXT UP:</span><img src="/img/emblem-${esc(next.type)}.svg" alt="" /><b>${esc(next.title)}</b></div>`);
+      audio.slam();
+      await wait(1200);
+      if (!live(tk)) return;
+      if (rows[0]) await say(`After leg ${n}, ${rows[0].name} is leading the Chaos Medley!`);
+      if (next && live(tk)) await say(`Next up: ${next.title}!`);
+      await wait(2200);
+      if (live(tk)) done(v);
+    },
+  },
+
   // ---------------- PODIUM ----------------
   podium: {
     async enter(v, tk) {
@@ -993,7 +1204,7 @@ const SCENES = {
         await say(`${a.title}: ${a.name}!`, { rate: 1.08 });
       }
       if (pd.top) {
-        add(`<div class="card topquote pop"><div class="k">⭐ PLAY OF THE GAME</div>
+        add(`<div class="card topquote pop"><div class="k">⭐ ${pd.type === "medley" ? "PLAY OF THE NIGHT" : "PLAY OF THE GAME"}</div>
           ${pd.top.sub ? `<div style="font-size:2.2vh">${esc(pd.top.sub)}</div>` : ''}
           <div class="q">“${esc(pd.top.text)}”</div><div class="by">— ${esc(pd.top.byName)} · ${pd.top.pts.toLocaleString()} pts</div></div>`, right);
         audio.ding();

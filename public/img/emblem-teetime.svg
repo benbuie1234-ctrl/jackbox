@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Hard offset shadow -->
+  <circle cx="106" cy="106" r="84" fill="#111"/>
+  <!-- Badge circle -->
+  <circle cx="100" cy="100" r="84" fill="#0d8a8f" stroke="#111" stroke-width="6"/>
+  <!-- Starburst -->
+  <polygon points="100,22 115,52 148,38 140,72 174,80 146,104 166,136 132,134 124,168 100,144 76,168 68,134 34,136 54,104 26,80 60,72 52,38 85,52" fill="#ffd23f" stroke="#111" stroke-width="4.5" stroke-linejoin="round"/>
+  <!-- Classic cartoon T-shirt -->
+  <path d="M76 52 Q100 66 124 52 L154 68 L142 98 L126 92 V152 H74 V92 L58 98 L46 68 Z" fill="#fffdf6" stroke="#111" stroke-width="5.5" stroke-linejoin="round"/>
+  <!-- Collar trim -->
+  <path d="M78 54 Q100 72 122 54" stroke="#ff2d8a" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <!-- Graphic lightning star on shirt chest -->
+  <polygon points="104,76 86,106 100,106 94,132 116,98 102,98" fill="#ff2d8a" stroke="#111" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- Paintbrush accent -->
+  <g transform="translate(136,118) rotate(32)">
+    <rect x="-5" y="0" width="10" height="34" rx="4" fill="#2ec4ff" stroke="#111" stroke-width="4"/>
+    <path d="M-7 0 Q0 -16 7 0 Z" fill="#2bd96b" stroke="#111" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+</svg>

@@ -206,8 +206,8 @@ export default {
     'Stuck? Hit PANIC for a silly answer at half points.',
   ],
 
-  init() {
-    return { round: 0, prompts: [], mi: 0, final: null, drafts: {} };
+  init(room, opts = {}) {
+    return { round: 0, prompts: [], mi: 0, final: null, drafts: {}, quick: !!opts.quick };
   },
 
   begin(room) { startRound(room, 1); },
@@ -223,7 +223,7 @@ export default {
         g.mi++;
         if (g.mi < g.prompts.length) return startMatch(room);
         return room.phase('z-scores', 9, { hostPaced: true, data: { round: g.round } });
-      case 'z-scores': return startRound(room, g.round + 1);
+      case 'z-scores': return startRound(room, g.quick && g.round === 1 ? 3 : g.round + 1);
       case 'z-fwrite': return finalReveal(room);
       case 'z-freveal': return openFinalVote(room);
       case 'z-fvote': return finalTally(room);
@@ -273,7 +273,7 @@ export default {
   hostView(room) {
     const g = room.g;
     const ph = room.phaseName;
-    const v = { round: g.round, mi: g.mi, of: g.prompts.length };
+    const v = { round: g.round, mi: g.mi, of: g.prompts.length, quick: !!g.quick };
     if (ph === 'z-write') {
       v.done = room.active().filter((p) => mine(g, p.id).every((pr) => pr.ans[p.id] != null)).map((p) => p.id);
     }

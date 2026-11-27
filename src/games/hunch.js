@@ -89,9 +89,9 @@ export default {
     'Final round: everyone guesses. Closest wins big.',
   ],
 
-  init(room) {
+  init(room, opts = {}) {
     const ids = room.active().map((p) => p.id);
-    const rounds = ids.length <= 4 ? 2 : 1;
+    const rounds = opts.quick ? 1 : ids.length <= 4 ? 2 : 1;
     const queue = [];
     for (let r = 1; r <= rounds; r++) for (const gid of shuffle(ids)) queue.push({ gid, r });
     room.s.used ??= [];

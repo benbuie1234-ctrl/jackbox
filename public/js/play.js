@@ -87,6 +87,12 @@ function onMsg(m) {
     showJoin();
   } else if (m.t === 'state') {
     render(m.v);
+  } else if (m.t === 'arts') {
+    art = m.map || {};
+    refreshArt();
+  } else if (m.t === 'art') {
+    art[m.id] = m.data;
+    refreshArt(m.id);
   } else if (m.t === 'error') {
     if (m.code === 'NO_ROOM') { forget(); showJoin('Room not found. Check the code on the TV.'); }
     else toast(m.msg || 'Oops!');
@@ -254,18 +260,25 @@ function screenKey(v) {
   if (ph === 'f-count' || ph === 'f-freeze') return `${ph}:${v.phaseId}`;
   if (ph === 'f-discuss') return `fd:${v.phaseId}:${v.me.vip}`;
   if (ph === 'f-vote') return `fv:${v.phaseId}:${pv.voted || ''}`;
+  if (ph === 't-draw' || ph === 't-slogan') {
+    const nx = (pv.slots || []).find((x) => !x.done);
+    return `${ph}:${v.phaseId}:${nx ? nx.key : 'done'}`;
+  }
+  if (ph === 't-build') return `tb:${v.phaseId}:${pv.done}`;
+  if (ph === 't-vote') return `tvote:${v.phaseId}:${pv.mine ? 'mine' : pv.voted || ''}`;
   return `tv:${ph}:${v.phaseId}`;
 }
 
 function render(v) {
   V = v;
-  const theme = v.phase === 'podium' ? 'podium' : v.game ? v.game.type : 'lobby';
+  const theme = v.phase === 'podium' ? 'podium' : v.phase === 'medley-standings' ? 'medley' : v.game ? v.game.type : 'lobby';
   document.body.className = 'theme-' + theme;
   renderBar(v);
   const k = screenKey(v);
   if (k === key) return update(v);
   key = k;
   scr.innerHTML = '';
+  pad = null;
   const fn = SCREENS[v.phase] || eyes;
   if (!v.me.inGame && v.phase !== 'lobby' && v.phase !== 'podium') return nextGame(v);
   fn(v);
@@ -339,9 +352,154 @@ function tickClock() {
   c.classList.toggle('urgent', left < 10000);
   // flush the draft right before time runs out
   if (left < 1600 && left > 0 && draftEl && !draftFlushed) { draftFlushed = true; sendDraft(); }
+  // auto-submit a half-finished drawing so nobody's art is lost to the buzzer
+  if (left < 1800 && left > 0 && pad && pad.dirty() && !pad.sent) { pad.sent = true; pad.submit(); }
 }
 
 const put = (html) => { scr.insertAdjacentHTML('beforeend', html); };
+
+// ---------------------------------------------------------------- Tee Time
+let art = {};
+let pad = null;
+function refreshArt(id) {
+  for (const el of $$(id ? `[data-art="${id}"]` : '[data-art]')) if (art[el.dataset.art]) el.src = art[el.dataset.art];
+}
+const SHIRT_PATH = 'M128 22 L166 8 Q200 46 234 8 L272 22 L388 86 L348 170 L306 146 L306 404 L94 404 L94 146 L52 170 L12 86 Z';
+function shirtHTML(sh) {
+  const ink = ['#1d1d22', '#1638ff'].includes(sh.c) ? '#fffdf6' : '#111';
+  const pic = sh.d ? `<img data-art="${sh.d}" src="${art[sh.d] || ''}" alt="" />` : '<div class="noart">🤷</div>';
+  return `<div class="shirt" style="--ink:${ink}"><svg viewBox="0 0 400 420" aria-hidden="true"><path d="${SHIRT_PATH}" fill="${sh.c}" stroke="#111" stroke-width="10" stroke-linejoin="round"/><path d="M166 8 Q200 46 234 8" fill="none" stroke="#111" stroke-width="10"/></svg>
+    <div class="print">${pic}<div class="sl">${esc(sh.text || '')}</div></div></div>`;
+}
+
+function drawScreen(v) {
+  const slots = v.pv.slots || [];
+  const nx = slots.find((x) => !x.done);
+  pad = null;
+  if (!nx) {
+    put(`<div class="eyes">🎨</div><div class="h1">ART SUBMITTED!</div><div class="note">Waiting for the other artistes…</div>`);
+    return reactions();
+  }
+  const idx = slots.indexOf(nx);
+  put(`<div class="box tilt"><div class="kicker">${slots.length > 1 ? `DRAWING ${idx + 1} OF ${slots.length}` : 'DRAW THIS (OR ANYTHING!)'}</div><div class="prm">${esc(nx.prompt)}</div></div>
+    <div class="drawpad"><canvas id="pad" width="320" height="320"></canvas></div>
+    <div class="drawtools">
+      ${['#111111', '#ff2d8a', '#1638ff', '#ffd23f', '#2bd96b', '#ff8c2e'].map((c, i) => `<button data-c="${c}" class="${i ? '' : 'on'}" style="background:${c}"></button>`).join('')}
+      <button class="tool" id="thick">✏️ THIN</button><button class="tool" id="undo">↶ UNDO</button><button class="tool" id="clr">CLEAR</button>
+    </div>
+    <button class="btn go" id="send">SUBMIT DRAWING</button>`);
+  const cv = $('#pad');
+  const ctx = cv.getContext('2d');
+  const strokes = [];
+  let cur = null, color = '#111111', width = 7;
+  const redraw = () => {
+    ctx.clearRect(0, 0, 320, 320);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const st of strokes) {
+      ctx.strokeStyle = st.c;
+      ctx.fillStyle = st.c;
+      ctx.lineWidth = st.w;
+      if (st.pts.length === 1) { ctx.beginPath(); ctx.arc(st.pts[0].x, st.pts[0].y, st.w / 2, 0, Math.PI * 2); ctx.fill(); continue; }
+      ctx.beginPath();
+      ctx.moveTo(st.pts[0].x, st.pts[0].y);
+      for (const p of st.pts.slice(1)) ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    }
+  };
+  const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: ((e.clientX - r.left) / r.width) * 320, y: ((e.clientY - r.top) / r.height) * 320 }; };
+  cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); cur = { c: color, w: width, pts: [pos(e)] }; strokes.push(cur); redraw(); });
+  cv.addEventListener('pointermove', (e) => { if (!cur) return; cur.pts.push(pos(e)); redraw(); });
+  const end = () => { cur = null; };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  for (const b of $$('.drawtools [data-c]')) b.onclick = () => { color = b.dataset.c; $$('.drawtools [data-c]').forEach((x) => x.classList.toggle('on', x === b)); };
+  $('#thick').onclick = () => { width = width === 7 ? 16 : 7; $('#thick').textContent = width === 7 ? '✏️ THIN' : '🖍️ THICK'; };
+  $('#undo').onclick = () => { strokes.pop(); redraw(); };
+  $('#clr').onclick = () => { strokes.length = 0; redraw(); };
+  pad = {
+    sent: false,
+    dirty: () => strokes.length > 0,
+    submit: () => { act('drawing', { key: nx.key, data: cv.toDataURL('image/png') }); vib([20, 30, 60]); },
+  };
+  $('#send').onclick = () => {
+    if (!strokes.length) return toast('Draw something first! Even a squiggle counts.');
+    pad.sent = true;
+    pad.submit();
+    $('#send').disabled = true;
+  };
+}
+
+function sloganScreen(v) {
+  const slots = v.pv.slots || [];
+  const nx = slots.find((x) => !x.done);
+  const max = v.pv.max || 45;
+  draftEl = null;
+  if (!nx) {
+    put(`<div class="eyes">✅</div><div class="h1">SLOGANS LOCKED!</div><div class="note">Waiting on the copywriters…</div>`);
+    return reactions();
+  }
+  const idx = slots.indexOf(nx);
+  put(`<div class="box tilt"><div class="kicker">${slots.length > 1 ? `SLOGAN ${idx + 1} OF ${slots.length}` : 'WRITE A SLOGAN'}</div><div class="prm">Something you'd put on a T-shirt.</div></div>
+    <input class="t" id="ans" maxlength="${max}" enterkeyhint="send" placeholder="I SURVIVED THE BUFFET" autocomplete="off" autocapitalize="characters" />
+    <div class="count" id="cnt">0/${max}</div>
+    <button class="btn go" id="send">SUBMIT</button>
+    <button class="btn red small" id="panic">😱 PANIC BUTTON <span class="sub">Get a silly slogan</span></button>`);
+  const ta = $('#ans');
+  draftEl = ta;
+  draftKey = nx.key;
+  draftFlushed = false;
+  ta.addEventListener('input', () => {
+    $('#cnt').textContent = `${ta.value.length}/${max}`;
+    clearTimeout(draftT);
+    draftT = setTimeout(sendDraft, 600);
+  });
+  ta.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); if (ta.value.trim()) $('#send').click(); else ta.blur(); } });
+  $('#send').onclick = () => {
+    const text = ta.value.trim();
+    if (!text) return toast('Type a slogan — or hit PANIC!');
+    act('slogan', { key: nx.key, text });
+    vib([20, 30, 60]);
+    $('#send').disabled = true;
+  };
+  $('#panic').onclick = () => { act('slogan', { key: nx.key, panic: true }); vib([60, 40, 60]); $('#panic').disabled = true; };
+}
+
+function buildScreen(v) {
+  const pv = v.pv;
+  if (pv.done) return eyes(v, 'SHIRT SUBMITTED! 👕', 'Get ready for the battle:');
+  const sel = { d: pv.d[0] ?? null, s: pv.s[0] ? pv.s[0].id : null, c: pv.colors[0] };
+  put(`<div class="h2">BUILD YOUR SHIRT</div>
+    <div class="shirtprev" id="prev"></div>
+    ${pv.d.length ? `<label class="f">PICK A DRAWING</label><div class="pickrow">${pv.d.map((id) => `<button class="art" data-d="${id}"><img data-art="${id}" src="${art[id] || ''}" alt="" /></button>`).join('')}</div>` : ''}
+    <label class="f">PICK A SLOGAN</label>
+    <div class="sllist">${pv.s.map((x) => `<button data-s="${x.id}">${esc(x.text)}</button>`).join('')}</div>
+    <label class="f">SHIRT COLOR</label>
+    <div class="colorrow">${pv.colors.map((c) => `<button data-c="${c}" style="background:${c}"></button>`).join('')}</div>
+    <button class="btn go" id="send">PRINT IT! 👕</button>`);
+  const paint = () => {
+    const sl = pv.s.find((x) => x.id === sel.s);
+    $('#prev').innerHTML = shirtHTML({ d: sel.d, text: sl ? sl.text : '', c: sel.c });
+    $$('[data-d]').forEach((b) => b.classList.toggle('on', b.dataset.d === sel.d));
+    $$('[data-s]').forEach((b) => b.classList.toggle('on', b.dataset.s === sel.s));
+    $$('.colorrow [data-c]').forEach((b) => b.classList.toggle('on', b.dataset.c === sel.c));
+  };
+  $$('[data-d]').forEach((b) => (b.onclick = () => { sel.d = b.dataset.d; vib(10); paint(); }));
+  $$('[data-s]').forEach((b) => (b.onclick = () => { sel.s = b.dataset.s; vib(10); paint(); }));
+  $$('.colorrow [data-c]').forEach((b) => (b.onclick = () => { sel.c = b.dataset.c; vib(10); paint(); }));
+  $('#send').onclick = () => { act('shirt', sel); vib([30, 40, 90]); $('#send').disabled = true; };
+  paint();
+}
+
+function shirtVote(v) {
+  const pv = v.pv;
+  if (pv.mine) return eyes(v, "YOUR SHIRT'S IN THE RING! 🥊", 'Look confident. Smash a reaction:');
+  if (pv.voted) return eyes(v, 'VOTE LOCKED 🔒', 'Smash a reaction:');
+  put(`<div class="h1">WHICH SHIRT?</div><div class="duel">
+    <button data-side="L">${shirtHTML(pv.L)}<div class="lbl">⬅️ LEFT</div></button>
+    <button data-side="R">${shirtHTML(pv.R)}<div class="lbl">RIGHT ➡️</div></button></div>`);
+  for (const b of $$('[data-side]')) b.onclick = () => { act('tvote', { side: b.dataset.side }); vib([20, 30, 70]); $$('[data-side]').forEach((x) => (x.disabled = true)); };
+}
 
 function reactions() {
   put(`<div class="reacts">
@@ -439,6 +597,10 @@ function sliderScreen({ title, q, onLock, live }) {
 
 // ---------------------------------------------------------------- SCREENS
 const SCREENS = {
+  't-draw': drawScreen,
+  't-slogan': sloganScreen,
+  't-build': buildScreen,
+  't-vote': shirtVote,
   lobby(v) {
     const addEdit = () => {
       put(`<div class="row"><button class="btn white small" id="editme">✏️ EDIT</button><button class="btn red small" id="leaveme">🚪 LEAVE</button></div>`);
