@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="pg" cx="50%" cy="25%" r="80%">
+      <stop offset="0%" stop-color="#ff4ea3"/>
+      <stop offset="50%" stop-color="#b81063"/>
+      <stop offset="100%" stop-color="#380524"/>
+    </radialGradient>
+    <linearGradient id="goldBeam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd23f" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ffd23f" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#pg)"/>
+  <!-- Grand stage curtains -->
+  <path d="M0 0 H230 Q175 430 250 780 L0 820 Z" fill="#6e073c" stroke="#111" stroke-width="7"/>
+  <path d="M1600 0 H1370 Q1425 430 1350 780 L1600 820 Z" fill="#6e073c" stroke="#111" stroke-width="7"/>
+  <!-- Sweeping championship gold beams -->
+  <polygon points="320,0 440,0 900,900 420,900" fill="url(#goldBeam)"/>
+  <polygon points="1160,0 1280,0 1180,900 700,900" fill="url(#goldBeam)"/>
+  <!-- Red carpet & glossy studio stage -->
+  <rect x="0" y="745" width="1600" height="155" fill="#2c061d" stroke="#111" stroke-width="6"/>
+  <polygon points="560,745 1040,745 1180,900 420,900" fill="#c8102e" stroke="#111" stroke-width="5"/>
+  <line x1="600" y1="745" x2="480" y2="900" stroke="#ffd23f" stroke-width="7"/>
+  <line x1="1000" y1="745" x2="1120" y2="900" stroke="#ffd23f" stroke-width="7"/>
+  <!-- Top marquee truss with gold bulbs -->
+  <rect x="0" y="0" width="1600" height="44" fill="#111"/>
+  <g fill="#ffd23f" stroke="#111" stroke-width="3">
+    <circle cx="120" cy="22" r="10"/><circle cx="240" cy="22" r="10"/><circle cx="360" cy="22" r="10"/><circle cx="480" cy="22" r="10"/><circle cx="600" cy="22" r="10"/><circle cx="720" cy="22" r="10"/><circle cx="840" cy="22" r="10"/><circle cx="960" cy="22" r="10"/><circle cx="1080" cy="22" r="10"/><circle cx="1200" cy="22" r="10"/><circle cx="1320" cy="22" r="10"/><circle cx="1440" cy="22" r="10"/>
+  </g>
+  <!-- Celebration stars -->
+  <g fill="#ffd23f" stroke="#111" stroke-width="4">
+    <polygon points="290,140 300,166 328,170 306,188 312,216 290,202 268,216 274,188 252,170 280,166"/>
+    <polygon points="1310,160 1318,180 1340,183 1323,197 1327,218 1310,207 1293,218 1297,197 1280,183 1302,180"/>
+  </g>
+</svg>

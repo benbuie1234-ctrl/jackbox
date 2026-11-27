@@ -175,7 +175,7 @@ function render(v) {
     audio.hush(false);
     audio.setUrgent(false);
     const R = SCENES[v.phase] || SCENES.unknown;
-    const cont = R.scene && R.scene === prevScene;
+    const cont = R.scene && R.scene === prevScene && !R.restart;
     curScene = R.scene || v.phase;
     if (cont) R.enter(v, choreo, true);
     else {
@@ -228,7 +228,8 @@ function setTimer(v) {
   $('#timer').classList.toggle('hidden', !deadline);
 }
 setInterval(() => {
-  if (!deadline || !conn) { audio.setUrgent(false); return; }
+  const vig = $('#urgent-vignette');
+  if (!deadline || !conn) { audio.setUrgent(false); vig && vig.classList.remove('on'); return; }
   const total = Math.max(1, (deadline - (V.phaseStart || deadline - 60000)));
   const left = Math.max(0, deadline - conn.now());
   const sec = Math.ceil(left / 1000);
@@ -236,8 +237,12 @@ setInterval(() => {
   $('#timer .fgc').setAttribute('stroke-dashoffset', String(100 - (left / total) * 100));
   const urgent = left > 0 && left <= 10000;
   $('#timer').classList.toggle('urgent', urgent);
+  vig && vig.classList.toggle('on', left > 0 && left <= 5000);
   audio.setUrgent(urgent);
-  if (sec !== lastSec && sec <= 5 && sec > 0) audio.tick(sec <= 3);
+  if (sec !== lastSec && sec <= 5 && sec > 0) {
+    audio.tick(sec <= 3);
+    if (sec === 5 && total >= 15000) say('Five seconds!', { rate: 1.15 });
+  }
   lastSec = sec;
 }, 200);
 
@@ -447,7 +452,7 @@ const SCENES = {
       const humans = v.players.filter((p) => !p.bot);
       const vip = v.players.find((p) => p.id === v.vip);
       if (!humans.length) msg.innerHTML = `Waiting for players… <b>Join on your phone!</b>`;
-      else msg.innerHTML = `👑 <b>${esc(vip ? vip.name : 'VIP')}</b> is the VIP. Pick a game on your phone!${v.settings.kid ? ' <br>🧒 Kid Mode: longer timers' : ''}`;
+      else msg.innerHTML = `👑 <b>${esc(vip ? vip.name : 'VIP')}</b> is the VIP. Pick a game on your phone!${v.settings.prize ? ` <br>🏆 Playing for: <b>${esc(v.settings.prize)}</b>` : ''}${v.settings.kid ? ' <br>🧒 Kid Mode: longer timers' : ''}`;
     },
   },
 
@@ -658,6 +663,7 @@ const SCENES = {
   // ---------------- HUNCH ----------------
   'h-guess': {
     scene: 'dial',
+    restart: true, // each new question wipes in fresh; bet/reveal continue on the same dial
     async enter(v, tk) {
       const gp = P(v.gv.gid);
       add(`<div class="card qcard tilt-l slam">${esc(v.gv.q)}</div>`);
@@ -986,7 +992,8 @@ const SCENES = {
           <div class="q">“${esc(pd.top.text)}”</div><div class="by">— ${esc(pd.top.byName)} · ${pd.top.pts.toLocaleString()} pts</div></div>`, right);
         audio.ding();
       }
-      add(`<div class="banner pop" style="--r:-1deg;margin-top:3vh;font-size:2.8vh">👑 VIP: PLAY AGAIN or SWITCH GAME on your phone</div>`);
+      if (v.settings && v.settings.prize) add(`<div class="banner pop" style="--r:1.5deg;margin-top:2vh;font-size:3.2vh;background:var(--yellow)">🏆 PRIZE: ${esc(v.settings.prize)}</div>`);
+      add(`<div class="banner pop" style="--r:-1deg;margin-top:2vh;font-size:2.8vh">👑 VIP: PLAY AGAIN or SWITCH GAME on your phone</div>`);
     },
   },
 };
@@ -1006,6 +1013,7 @@ $('#unmute').onclick = () => {
 };
 $('#btn-voice').onclick = (e) => { audio.voiceOn = !audio.voiceOn; e.currentTarget.classList.toggle('off', !audio.voiceOn); if (!audio.voiceOn) hushVoice(); };
 $('#btn-music').onclick = (e) => { audio.setMusic(!audio.musicOn); e.currentTarget.classList.toggle('off', !audio.musicOn); };
+$('#vol-music').oninput = (e) => audio.setMusicVol(+e.target.value);
 const fullscreen = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}));
 $('#btn-full').onclick = fullscreen;
 document.addEventListener('keydown', (e) => { if (e.key === 'f' || e.key === 'F') fullscreen(); });

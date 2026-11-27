@@ -36,7 +36,7 @@ export class Room extends DurableObject {
       code, hostKey: rid(), created: now, updated: now,
       phase: 'lobby', phaseId: 1, phaseStart: now, deadline: null, pd: {}, spot: [],
       players: {}, order: [], vip: null,
-      settings: { kid: false },
+      settings: { kid: false, prize: '' },
       game: null, lastType: null, podium: null, stats: {}, top: null,
       events: [], colorI: 0,
     };
@@ -288,6 +288,9 @@ export class Room extends DurableObject {
       game: s.game ? { type: s.game.type, title: G.title } : null,
       pv: G && p.inGame ? G.playerView(this, pid) : null,
     };
+    if (vip) {
+      v.players = this.publicPlayers();
+    }
     if (s.phase === 'lobby') {
       v.games = Object.entries(GAMES).map(([id, g]) => ({ id, title: g.title, tagline: g.tagline, min: g.min }));
     }
@@ -447,6 +450,19 @@ export class Room extends DurableObject {
       s.settings.kid = !!m.on;
       return void (await this.commit());
     }
+    if (a === 'prize') {
+      s.settings.prize = String(m.text || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 60);
+      return void (await this.commit());
+    }
+    if (a === 'kick' && m.id && m.id !== this.vipId() && s.players[m.id]) {
+      for (const w of this.socketsFor(m.id)) try { w.close(4004, 'kicked'); } catch {}
+      this.removePlayer(m.id);
+      return void (await this.commit());
+    }
+    if (a === 'skip-phase' && s.game) {
+      this.timeout();
+      return void (await this.commit());
+    }
     if (a === 'start' || a === 'again') {
       if (s.phase !== 'lobby' && s.phase !== 'podium') return;
       const type = a === 'again' ? s.lastType : m.game;
@@ -454,7 +470,7 @@ export class Room extends DurableObject {
       if (!G) return;
       const count = s.order.length;
       if (count < G.min) {
-        return void this.send(ws, { t: 'error', code: 'MIN', msg: `${G.title} needs at least ${G.min} players. (Tip: "Add 3 Bots" on the TV to test.)` });
+        return void this.send(ws, { t: 'error', code: 'MIN', msg: `${G.title} needs at least ${G.min} players.` });
       }
       this.startGame(type);
       return void (await this.commit());

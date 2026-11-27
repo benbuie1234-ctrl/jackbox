@@ -226,9 +226,14 @@ export const audio = {
   setTheme(name) { if (THEMES[name]) this.theme = name; },
   setUrgent(on) { this.urgent = !!on; },
   setMusic(on) { this.musicOn = on; },
+  musicVol: 0.3,
+  setMusicVol(pct) {
+    this.musicVol = Math.max(0, Math.min(1, pct / 100)) * 0.5;
+    if (ctx && musicBus) musicBus.gain.setTargetAtTime(this.musicVol, ctx.currentTime, 0.05);
+  },
   duck(on) {
     if (!ctx) return;
-    musicBus.gain.setTargetAtTime(on ? 0.1 : 0.3, ctx.currentTime, 0.08);
+    musicBus.gain.setTargetAtTime(on ? this.musicVol * 0.33 : this.musicVol, ctx.currentTime, 0.08);
   },
   hush(on) { this.silent = on; },
 

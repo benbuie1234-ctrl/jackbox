@@ -276,13 +276,21 @@ function renderBar(v) {
 function vipMenu() {
   const d = document.createElement('div');
   d.className = 'vipmenu';
-  d.innerHTML = `<div class="box"><div class="kicker">VIP MENU</div>
-    <button class="btn red" id="vm-end">END GAME → BACK TO LOBBY</button>
-    <button class="btn white" id="vm-x">CLOSE</button></div>`;
+  const others = (V && V.players || []).filter((p) => p.id !== V.me.id);
+  const kicks = others.length
+    ? `<div class="kicker" style="margin-top:6px">KICK AFK / DUPLICATE PLAYER</div>` + others.map((p) => `<button class="btn white small" data-kick="${p.id}">🚫 Kick ${esc(p.name)}${p.connected || p.bot ? '' : ' (disconnected)'}</button>`).join('')
+    : '';
+  d.innerHTML = `<div class="box"><div class="kicker">👑 VIP CONTROLS</div>
+    <button class="btn go small" id="vm-skip">⏭ SKIP CURRENT TIMER / ADVANCE</button>
+    <button class="btn red small" id="vm-end">END GAME → BACK TO LOBBY</button>
+    ${kicks}
+    <button class="btn white small" id="vm-x">CLOSE</button></div>`;
   document.body.appendChild(d);
   $('#vm-x', d).onclick = () => d.remove();
   d.onclick = (e) => { if (e.target === d) d.remove(); };
+  $('#vm-skip', d).onclick = () => { vip('skip-phase'); d.remove(); };
   $('#vm-end', d).onclick = () => { if (confirm('End this game for everyone?')) { vip('end'); d.remove(); } };
+  for (const b of $$('[data-kick]', d)) b.onclick = () => { if (confirm(`Kick ${b.textContent.replace('🚫 Kick ', '')}?`)) { vip('kick', { id: b.dataset.kick }); d.remove(); } };
 }
 
 setInterval(tickClock, 250);
@@ -405,9 +413,13 @@ const SCREENS = {
     for (const g of v.games) {
       put(`<button class="btn game ${g.id}" data-g="${g.id}"><img class="g-emblem" src="/img/emblem-${g.id}.svg" alt="" /><span class="g-copy"><span class="t">${esc(g.title)}</span><span class="sub">${esc(g.tagline)} · ${g.min}+ players</span></span></button>`);
     }
-    put(`<div class="toggle ${v.settings.kid ? 'on' : ''}" id="kid"><span>🧒 KID MODE<br><small style="font-family:var(--body)">50% longer timers</small></span><div class="sw"></div></div>`);
+    put(`<div class="toggle ${v.settings.kid ? 'on' : ''}" id="kid"><span>🧒 KID MODE<br><small style="font-family:var(--body)">50% longer timers</small></span><div class="sw"></div></div>
+      <label class="f" style="margin-top:4px">🏆 WINNER'S PRIZE (OPTIONAL)</label>
+      <input class="t" id="prize" maxlength="60" placeholder="e.g. Last slice of pie!" value="${esc(v.settings.prize || '')}" />`);
     for (const b of $$('[data-g]')) b.onclick = () => { vip('start', { game: b.dataset.g }); vib([30, 30, 90]); };
     $('#kid').onclick = () => vip('kid', { on: !V.settings.kid });
+    let pt = null;
+    $('#prize').addEventListener('input', (e) => { clearTimeout(pt); pt = setTimeout(() => vip('prize', { text: e.target.value }), 400); });
     addEdit();
   },
 
